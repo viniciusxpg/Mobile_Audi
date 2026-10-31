@@ -21,6 +21,7 @@ import com.google.common.util.concurrent.ListenableFuture
 import com.mobileaudi.player.MainActivity
 import com.mobileaudi.player.R
 import com.mobileaudi.player.data.MusicRepository
+import com.mobileaudi.player.data.Song
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
@@ -132,14 +133,15 @@ class PlaybackService : MediaLibraryService() {
 
         /**
          * Itens que chegam de controladores (app, Android Auto, Assistente) podem vir
-         * sem a URI do arquivo; aqui ela é reconstruída a partir do mediaId.
+         * sem a URI do arquivo; aqui ela é reconstruída a partir do mediaId. Pedidos de
+         * busca por voz chegam com `requestMetadata.searchQuery` e viram a lista de resultados.
          */
         override fun onAddMediaItems(
             mediaSession: MediaSession,
             controller: MediaSession.ControllerInfo,
             mediaItems: MutableList<MediaItem>,
         ): ListenableFuture<MutableList<MediaItem>> =
-            Futures.immediateFuture(mediaItems.mapNotNull(::resolve).toMutableList())
+            serviceScope.future<MutableList<MediaItem>> { resolveAll(mediaItems).toMutableList() }
 
         /**
          * Quando uma única faixa é escolhida (ex.: no Android Auto), toca a biblioteca
@@ -153,10 +155,13 @@ class PlaybackService : MediaLibraryService() {
             startPositionMs: Long,
         ): ListenableFuture<MediaSession.MediaItemsWithStartPosition> =
             serviceScope.future<MediaSession.MediaItemsWithStartPosition> {
-                val resolved = mediaItems.mapNotNull(::resolve)
-                if (resolved.size == 1) {
+                val single = mediaItems.singleOrNull()
+                val singleSongId = single
+                    ?.takeIf { it.requestMetadata.searchQuery == null }
+                    ?.let { MediaIds.parseSongId(it.mediaId) }
+                if (singleSongId != null) {
                     val songs = repository.getSongs()
-                    val index = songs.indexOfFirst { MediaIds.song(it.id) == resolved[0].mediaId }
+                    val index = songs.indexOfFirst { it.id == singleSongId }
                     if (index >= 0 && songs.size > 1) {
                         return@future MediaSession.MediaItemsWithStartPosition(
                             songs.map { it.toMediaItem() },
@@ -165,15 +170,36 @@ class PlaybackService : MediaLibraryService() {
                         )
                     }
                 }
+                val resolved = resolveAll(mediaItems)
                 val safeIndex = if (resolved.size == mediaItems.size) startIndex else 0
                 MediaSession.MediaItemsWithStartPosition(resolved, safeIndex, startPositionMs)
             }
     }
 
-    private fun resolve(item: MediaItem): MediaItem? {
-        if (item.localConfiguration != null) return item
-        val songId = MediaIds.parseSongId(item.mediaId) ?: return null
-        return item.buildUpon().setUri(songContentUri(songId)).build()
+    private suspend fun resolveAll(items: List<MediaItem>): List<MediaItem> = items.flatMap { item ->
+        val query = item.requestMetadata.searchQuery
+        when {
+            item.localConfiguration != null -> listOf(item)
+            query != null -> search(query).map { it.toMediaItem() }
+            else -> MediaIds.parseSongId(item.mediaId)
+                ?.let { listOf(item.buildUpon().setUri(songContentUri(it)).build()) }
+                .orEmpty()
+        }
+    }
+
+    /**
+     * Busca por título, artista ou álbum. Uma busca vazia ("tocar músicas no app")
+     * toca a biblioteca inteira em ordem aleatória.
+     */
+    private suspend fun search(query: String): List<Song> {
+        val songs = repository.getSongs()
+        val terms = query.trim().lowercase()
+        if (terms.isEmpty()) return songs.shuffled()
+        return songs.filter { song ->
+            song.title.lowercase().contains(terms) ||
+                song.artist.lowercase().contains(terms) ||
+                song.album.lowercase().contains(terms)
+        }
     }
 
     private fun rootItem(): MediaItem =

@@ -9,6 +9,7 @@ Tocador de música para Android, nativo, em **Kotlin + Jetpack Compose + Media3 
 - Mini player na parte de baixo da biblioteca
 - **Reprodução em segundo plano** com notificação, controles na tela de bloqueio e botões de fones Bluetooth
 - Pausa automaticamente em ligações (foco de áudio) e ao desconectar o fone
+- Busca por voz ("Ok Google, tocar ... no Mobile Audi"), inclusive no Android Auto
 - **Android Auto**: navegação por "Todas as músicas" e "Álbuns" direto na central do carro
 - Material You (cores do papel de parede) no Android 12+, tema claro e escuro
 
