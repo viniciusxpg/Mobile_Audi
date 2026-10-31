@@ -1,0 +1,5 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- Tema da janela; as cores da interface vêm do tema Compose (ui/theme). -->
+    <style name="Theme.MobileAudi" parent="android:Theme.Material.Light.NoActionBar" />
+</resources>

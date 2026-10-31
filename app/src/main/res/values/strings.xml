@@ -1,0 +1,28 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="app_name">Mobile Audi</string>
+
+    <string name="library_all_songs">Todas as músicas</string>
+    <string name="library_albums">Álbuns</string>
+    <string name="unknown_artist">Artista desconhecido</string>
+    <string name="unknown_album">Álbum desconhecido</string>
+    <string name="album_song_count">%1$d músicas</string>
+
+    <string name="now_playing">Tocando agora</string>
+    <string name="empty_library_title">Nenhuma música encontrada</string>
+    <string name="empty_library_message">Copie arquivos de áudio para o aparelho e toque em atualizar.</string>
+
+    <string name="permission_title">Acesso às suas músicas</string>
+    <string name="permission_message">Para listar e tocar as músicas salvas no aparelho, o Mobile Audi precisa de permissão para ler seus arquivos de áudio.</string>
+    <string name="permission_grant">Permitir acesso</string>
+    <string name="permission_open_settings">Abrir configurações</string>
+
+    <string name="action_refresh">Atualizar biblioteca</string>
+    <string name="action_play">Tocar</string>
+    <string name="action_pause">Pausar</string>
+    <string name="action_next">Próxima</string>
+    <string name="action_previous">Anterior</string>
+    <string name="action_shuffle">Aleatório</string>
+    <string name="action_repeat">Repetir</string>
+    <string name="action_close">Fechar</string>
+</resources>
