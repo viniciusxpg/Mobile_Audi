@@ -40,6 +40,7 @@ import io.github.viniciusxpg.vinil.ui.components.SongActions
 import io.github.viniciusxpg.vinil.ui.components.quantityString
 import io.github.viniciusxpg.vinil.ui.screens.CollectionScreen
 import io.github.viniciusxpg.vinil.ui.screens.CollectionUi
+import io.github.viniciusxpg.vinil.ui.screens.EqualizerScreen
 import io.github.viniciusxpg.vinil.ui.screens.LibraryScreen
 import io.github.viniciusxpg.vinil.ui.screens.NowPlayingScreen
 import io.github.viniciusxpg.vinil.ui.screens.PermissionScreen
@@ -54,9 +55,12 @@ fun VinilApp(viewModel: PlayerViewModel = viewModel()) {
     val context = LocalContext.current
     val state by viewModel.uiState.collectAsStateWithLifecycle()
     val playlists by viewModel.playlists.collectAsStateWithLifecycle()
+    val equalizerState by viewModel.equalizerState.collectAsStateWithLifecycle()
 
     var hasPermission by remember { mutableStateOf(PermissionUtils.hasAudioPermission(context)) }
     var showNowPlaying by rememberSaveable { mutableStateOf(false) }
+    // O equalizador abre por cima de qualquer tela e, ao voltar, retorna a ela.
+    var showEqualizer by rememberSaveable { mutableStateOf(false) }
 
     // Pilha de telas abertas sobre a biblioteca: "search" ou um mediaId
     // de coleção ("album:42", "playlist:3"...). Vazia = biblioteca.
@@ -135,6 +139,19 @@ fun VinilApp(viewModel: PlayerViewModel = viewModel()) {
     }
 
     when {
+        showEqualizer -> {
+            BackHandler { showEqualizer = false }
+            EqualizerScreen(
+                state = equalizerState,
+                onBack = { showEqualizer = false },
+                onEnabledChange = viewModel::setEqualizerEnabled,
+                onPresetSelected = viewModel::useEqualizerPreset,
+                onBandChange = viewModel::setEqualizerBand,
+                onBassBoostChange = viewModel::setBassBoost,
+                onReset = viewModel::resetEqualizer,
+            )
+        }
+
         showNowPlaying && state.current != null -> {
             BackHandler { showNowPlaying = false }
             NowPlayingScreen(
@@ -146,6 +163,7 @@ fun VinilApp(viewModel: PlayerViewModel = viewModel()) {
                 onSeek = viewModel::seekTo,
                 onToggleShuffle = viewModel::toggleShuffle,
                 onCycleRepeat = viewModel::cycleRepeatMode,
+                onOpenEqualizer = { showEqualizer = true },
             )
         }
 
@@ -216,6 +234,7 @@ fun VinilApp(viewModel: PlayerViewModel = viewModel()) {
                 onOpenCollection = { push(it) },
                 onCreatePlaylist = { newPlaylistSongs = emptyList() },
                 onOpenSearch = { push(ROUTE_SEARCH) },
+                onOpenEqualizer = { showEqualizer = true },
                 onRefresh = { viewModel.loadLibrary(forceRefresh = true) },
                 miniPlayer = miniPlayer,
             )

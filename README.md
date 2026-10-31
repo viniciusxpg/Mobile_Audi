@@ -13,6 +13,7 @@ Tocador de música para Android, nativo, em **Kotlin + Jetpack Compose + Media3 
 - Telas de álbum, artista e pasta com botões **Tocar** e **Aleatório**; álbuns em ordem de faixa
 - **Retoma de onde parou**: ao reabrir o app (ou apertar play no fone com o app fechado) volta à última música, na mesma posição, com a mesma fila
 - Tela "Tocando agora" com barra de progresso, aleatório e repetir (desligado / tudo / uma)
+- **Equalizador** com ajustes prontos do aparelho, uma barra por faixa de frequência e reforço de graves (vale só para o Vinil e fica salvo)
 - Mini player na parte de baixo da biblioteca
 - **Reprodução em segundo plano** com notificação, controles na tela de bloqueio e botões de fones Bluetooth
 - Pausa automaticamente em ligações (foco de áudio) e ao desconectar o fone
@@ -62,15 +63,16 @@ app/src/main/java/io/github/viniciusxpg/vinil/
 ├── playback/
 │   ├── PlaybackService.kt       # MediaLibraryService: ExoPlayer, notificação, Android Auto
 │   ├── PlaybackStateStore.kt    # salva fila/posição para retomar de onde parou
+│   ├── EqualizerController.kt   # equalizador e reforço de graves na sessão de áudio do player
 │   ├── MediaIds.kt              # IDs da árvore de navegação (songs / albums / artists / folders)
 │   └── MediaItems.kt            # conversão Song/Album -> MediaItem
 ├── ui/
 │   ├── VinilApp.kt              # permissões e navegação entre telas
 │   ├── PlayerViewModel.kt       # MVVM: MediaController -> StateFlow
 │   ├── components/              # AlbumArt, MiniPlayer, SongRow (menu ⋮), diálogos de playlist
-│   ├── screens/                 # Library (abas), Collection, Search, NowPlaying, Permission
+│   ├── screens/                 # Library (abas), Collection, Search, NowPlaying, Equalizer, Permission
 │   └── theme/                   # tema Material 3
-└── util/                        # permissões, formatação de tempo
+└── util/                        # permissões, formatação de tempo e de frequência
 ```
 
 ### Arquitetura
@@ -88,4 +90,6 @@ com o app fechado e todos os controles ficam sincronizados.
 
 ## Próximos passos
 
-- Equalizador
+- Reordenar músicas das playlists
+- Opção para mostrar áudios do WhatsApp
+- Versão de release assinada para a Play Store

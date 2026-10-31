@@ -25,6 +25,7 @@ import androidx.compose.foundation.pager.rememberPagerState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
+import androidx.compose.material.icons.filled.Equalizer
 import androidx.compose.material.icons.filled.Folder
 import androidx.compose.material.icons.filled.LibraryMusic
 import androidx.compose.material.icons.filled.MusicOff
@@ -91,6 +92,7 @@ fun LibraryScreen(
     onOpenCollection: (String) -> Unit,
     onCreatePlaylist: () -> Unit,
     onOpenSearch: () -> Unit,
+    onOpenEqualizer: () -> Unit,
     onRefresh: () -> Unit,
     miniPlayer: @Composable () -> Unit,
 ) {
@@ -109,6 +111,12 @@ fun LibraryScreen(
                             Icon(
                                 Icons.Filled.Search,
                                 contentDescription = stringResource(R.string.action_search),
+                            )
+                        }
+                        IconButton(onClick = onOpenEqualizer) {
+                            Icon(
+                                Icons.Filled.Equalizer,
+                                contentDescription = stringResource(R.string.equalizer),
                             )
                         }
                         IconButton(onClick = onRefresh) {

@@ -72,4 +72,13 @@
         <item quantity="many">%1$d músicas adicionadas a “%2$s”</item>
         <item quantity="other">%1$d músicas adicionadas a “%2$s”</item>
     </plurals>
+
+    <string name="equalizer">Equalizador</string>
+    <string name="equalizer_unavailable">O equalizador não está disponível neste aparelho.</string>
+    <string name="equalizer_disabled_hint">Ative o equalizador no botão acima para ajustar o som.</string>
+    <string name="equalizer_presets">Ajustes prontos</string>
+    <string name="equalizer_custom">Personalizado</string>
+    <string name="equalizer_bands">Faixas de frequência</string>
+    <string name="equalizer_bass_boost">Reforço de graves</string>
+    <string name="equalizer_reset">Zerar ajustes</string>
 </resources>

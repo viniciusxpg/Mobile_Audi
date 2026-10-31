@@ -17,6 +17,8 @@ import io.github.viniciusxpg.vinil.data.Playlist
 import io.github.viniciusxpg.vinil.data.PlaylistRepository
 import io.github.viniciusxpg.vinil.data.Song
 import io.github.viniciusxpg.vinil.data.songContentUri
+import io.github.viniciusxpg.vinil.playback.EqualizerController
+import io.github.viniciusxpg.vinil.playback.EqualizerState
 import io.github.viniciusxpg.vinil.playback.MediaIds
 import io.github.viniciusxpg.vinil.playback.PlaybackService
 import io.github.viniciusxpg.vinil.playback.toMediaItem
@@ -59,6 +61,21 @@ class PlayerViewModel(application: Application) : AndroidViewModel(application) 
 
     /** Playlists do usuário, em ordem alfabética. */
     val playlists: StateFlow<List<Playlist>> = playlistRepository.playlists
+
+    private val equalizer = EqualizerController.getInstance(application)
+
+    /** Estado do equalizador (aplicado pelo serviço de reprodução). */
+    val equalizerState: StateFlow<EqualizerState> = equalizer.state
+
+    fun setEqualizerEnabled(enabled: Boolean) = equalizer.setEnabled(enabled)
+
+    fun setEqualizerBand(band: Int, levelMb: Int) = equalizer.setBandLevel(band, levelMb)
+
+    fun useEqualizerPreset(index: Int) = equalizer.usePreset(index)
+
+    fun setBassBoost(strength: Int) = equalizer.setBassBoost(strength)
+
+    fun resetEqualizer() = equalizer.reset()
 
     private val _uiState = MutableStateFlow(PlayerUiState())
     val uiState: StateFlow<PlayerUiState> = _uiState.asStateFlow()

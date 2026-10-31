@@ -2,6 +2,7 @@ package io.github.viniciusxpg.vinil.playback
 
 import android.app.PendingIntent
 import android.content.Intent
+import android.media.AudioManager
 import androidx.annotation.OptIn
 import androidx.media3.common.AudioAttributes
 import androidx.media3.common.C
@@ -55,6 +56,7 @@ class PlaybackService : MediaLibraryService() {
     private lateinit var repository: MusicRepository
     private lateinit var playlistRepository: PlaylistRepository
     private lateinit var stateStore: PlaybackStateStore
+    private lateinit var equalizer: EqualizerController
     private var session: MediaLibrarySession? = null
     private var positionSaverJob: Job? = null
 
@@ -102,6 +104,14 @@ class PlaybackService : MediaLibraryService() {
             .setWakeMode(C.WAKE_MODE_LOCAL)
             .build()
 
+        // Sessão de áudio própria para aplicar o equalizador só ao som do Vinil.
+        equalizer = EqualizerController.getInstance(this)
+        val audioSessionId = getSystemService(AudioManager::class.java).generateAudioSessionId()
+        if (audioSessionId != AudioManager.ERROR) {
+            player.setAudioSessionId(audioSessionId)
+            equalizer.attach(audioSessionId)
+        }
+
         val openAppIntent = PendingIntent.getActivity(
             this,
             0,
@@ -131,6 +141,7 @@ class PlaybackService : MediaLibraryService() {
 
     override fun onDestroy() {
         positionSaverJob?.cancel()
+        equalizer.release()
         session?.run {
             savePosition(player)
             player.removeListener(stateSaver)

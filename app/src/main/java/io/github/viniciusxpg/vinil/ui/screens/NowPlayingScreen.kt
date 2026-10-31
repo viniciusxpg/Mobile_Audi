@@ -10,6 +10,7 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.widthIn
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Equalizer
 import androidx.compose.material.icons.filled.KeyboardArrowDown
 import androidx.compose.material.icons.filled.Pause
 import androidx.compose.material.icons.filled.PlayArrow
@@ -55,6 +56,7 @@ fun NowPlayingScreen(
     onSeek: (Long) -> Unit,
     onToggleShuffle: () -> Unit,
     onCycleRepeat: () -> Unit,
+    onOpenEqualizer: () -> Unit,
 ) {
     val current = state.current ?: return
     // Posição enquanto o usuário arrasta a barra; só faz o seek ao soltar.
@@ -70,6 +72,11 @@ fun NowPlayingScreen(
                             Icons.Filled.KeyboardArrowDown,
                             contentDescription = stringResource(R.string.action_close),
                         )
+                    }
+                },
+                actions = {
+                    IconButton(onClick = onOpenEqualizer) {
+                        Icon(Icons.Filled.Equalizer, contentDescription = stringResource(R.string.equalizer))
                     }
                 },
             )
