@@ -28,7 +28,9 @@ class MusicRepository private constructor(private val context: Context) {
         // Sem permissão não há o que ler, e não guardamos a biblioteca vazia no cache
         // para que a leitura aconteça assim que a permissão for concedida.
         if (!PermissionUtils.hasAudioPermission(context)) return@withLock Library.EMPTY
-        val library = withContext(Dispatchers.IO) { Library.from(querySongs()) }
+        val library = withContext(Dispatchers.IO) {
+            Library.from(querySongs().filterNot { isMessagingAppFolder(it.folder) })
+        }
         cache = library
         library
     }

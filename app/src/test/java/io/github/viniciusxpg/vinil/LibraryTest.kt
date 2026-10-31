@@ -3,8 +3,11 @@ package io.github.viniciusxpg.vinil
 import io.github.viniciusxpg.vinil.data.Library
 import io.github.viniciusxpg.vinil.data.Song
 import io.github.viniciusxpg.vinil.data.folderName
+import io.github.viniciusxpg.vinil.data.isMessagingAppFolder
 import io.github.viniciusxpg.vinil.data.normalizeFolder
 import org.junit.Assert.assertEquals
+import org.junit.Assert.assertFalse
+import org.junit.Assert.assertTrue
 import org.junit.Test
 
 class LibraryTest {
@@ -78,5 +81,17 @@ class LibraryTest {
         assertEquals("/", folderName("/"))
         assertEquals("/", folderName(""))
         assertEquals("/", normalizeFolder("/"))
+    }
+
+    @Test
+    fun detectsMessagingAppFolders() {
+        assertTrue(isMessagingAppFolder("Android/media/com.whatsapp/WhatsApp/Media/WhatsApp Voice Notes/202544/"))
+        assertTrue(isMessagingAppFolder("Android/media/com.whatsapp.w4b/WhatsApp Business/Media/WhatsApp Business Audio/"))
+        assertTrue(isMessagingAppFolder("/storage/emulated/0/WhatsApp/Media/WhatsApp Audio"))
+        assertTrue(isMessagingAppFolder("Telegram/Telegram Audio/"))
+        assertTrue(isMessagingAppFolder("Android/media/org.telegram.messenger/Telegram/Telegram Audio/"))
+        assertFalse(isMessagingAppFolder("Music/Rock/"))
+        assertFalse(isMessagingAppFolder("Download/"))
+        assertFalse(isMessagingAppFolder(""))
     }
 }
