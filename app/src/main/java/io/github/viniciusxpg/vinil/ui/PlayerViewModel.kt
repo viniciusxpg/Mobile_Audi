@@ -13,6 +13,8 @@ import androidx.media3.session.SessionToken
 import com.google.common.util.concurrent.ListenableFuture
 import io.github.viniciusxpg.vinil.data.Library
 import io.github.viniciusxpg.vinil.data.MusicRepository
+import io.github.viniciusxpg.vinil.data.Playlist
+import io.github.viniciusxpg.vinil.data.PlaylistRepository
 import io.github.viniciusxpg.vinil.data.Song
 import io.github.viniciusxpg.vinil.data.songContentUri
 import io.github.viniciusxpg.vinil.playback.MediaIds
@@ -53,6 +55,10 @@ data class PlayerUiState(
 class PlayerViewModel(application: Application) : AndroidViewModel(application) {
 
     private val repository = MusicRepository.getInstance(application)
+    private val playlistRepository = PlaylistRepository.getInstance(application)
+
+    /** Playlists do usuário, em ordem alfabética. */
+    val playlists: StateFlow<List<Playlist>> = playlistRepository.playlists
 
     private val _uiState = MutableStateFlow(PlayerUiState())
     val uiState: StateFlow<PlayerUiState> = _uiState.asStateFlow()
@@ -69,6 +75,7 @@ class PlayerViewModel(application: Application) : AndroidViewModel(application) 
 
     init {
         connectToService()
+        viewModelScope.launch { playlistRepository.load() }
     }
 
     private fun connectToService() {
@@ -110,6 +117,44 @@ class PlayerViewModel(application: Application) : AndroidViewModel(application) 
         if (songs.isEmpty()) return
         player.shuffleModeEnabled = true
         playSongs(songs, songs.indices.random())
+    }
+
+    /** Coloca [song] logo depois da música atual na fila. */
+    fun playNext(song: Song) {
+        val player = controller ?: return
+        val item = song.toMediaItem()
+        if (player.mediaItemCount == 0) {
+            player.setMediaItem(item)
+            player.prepare()
+            player.play()
+        } else {
+            player.addMediaItem(player.currentMediaItemIndex + 1, item)
+        }
+    }
+
+    fun createPlaylist(name: String, songs: List<Song>, onCreated: (Playlist) -> Unit = {}) {
+        viewModelScope.launch {
+            onCreated(playlistRepository.create(name, songs.map { it.id }))
+        }
+    }
+
+    fun renamePlaylist(playlistId: Long, name: String) {
+        viewModelScope.launch { playlistRepository.rename(playlistId, name) }
+    }
+
+    fun deletePlaylist(playlistId: Long) {
+        viewModelScope.launch { playlistRepository.delete(playlistId) }
+    }
+
+    /** Adiciona as músicas à playlist; [onDone] recebe quantas eram novas. */
+    fun addToPlaylist(playlistId: Long, songs: List<Song>, onDone: (Int) -> Unit = {}) {
+        viewModelScope.launch {
+            onDone(playlistRepository.addSongs(playlistId, songs.map { it.id }))
+        }
+    }
+
+    fun removeFromPlaylist(playlistId: Long, songId: Long) {
+        viewModelScope.launch { playlistRepository.removeSong(playlistId, songId) }
     }
 
     fun playPause() {

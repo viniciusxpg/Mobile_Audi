@@ -25,6 +25,9 @@ import io.github.viniciusxpg.vinil.data.Album
 import io.github.viniciusxpg.vinil.data.Artist
 import io.github.viniciusxpg.vinil.data.Folder
 import io.github.viniciusxpg.vinil.data.MusicRepository
+import io.github.viniciusxpg.vinil.data.Playlist
+import io.github.viniciusxpg.vinil.data.PlaylistRepository
+import io.github.viniciusxpg.vinil.data.matchingSongs
 import io.github.viniciusxpg.vinil.data.Song
 import io.github.viniciusxpg.vinil.data.songContentUri
 import kotlinx.coroutines.CoroutineScope
@@ -50,6 +53,7 @@ class PlaybackService : MediaLibraryService() {
 
     private val serviceScope = CoroutineScope(SupervisorJob() + Dispatchers.Main.immediate)
     private lateinit var repository: MusicRepository
+    private lateinit var playlistRepository: PlaylistRepository
     private lateinit var stateStore: PlaybackStateStore
     private var session: MediaLibrarySession? = null
     private var positionSaverJob: Job? = null
@@ -83,6 +87,7 @@ class PlaybackService : MediaLibraryService() {
     override fun onCreate() {
         super.onCreate()
         repository = MusicRepository.getInstance(this)
+        playlistRepository = PlaylistRepository.getInstance(this)
         stateStore = PlaybackStateStore(this)
 
         val player = ExoPlayer.Builder(this)
@@ -327,13 +332,8 @@ class PlaybackService : MediaLibraryService() {
      */
     private suspend fun search(query: String): List<Song> {
         val songs = repository.getSongs()
-        val terms = query.trim().lowercase()
-        if (terms.isEmpty()) return songs.shuffled()
-        return songs.filter { song ->
-            song.title.lowercase().contains(terms) ||
-                song.artist.lowercase().contains(terms) ||
-                song.album.lowercase().contains(terms)
-        }
+        if (query.isBlank()) return songs.shuffled()
+        return matchingSongs(songs, query)
     }
 
     private fun rootItem(): MediaItem =
@@ -341,6 +341,7 @@ class PlaybackService : MediaLibraryService() {
 
     private fun rootFolders(): List<MediaItem> = listOf(
         folderItem(MediaIds.SONGS, getString(R.string.library_all_songs), MediaMetadata.MEDIA_TYPE_FOLDER_MIXED),
+        folderItem(MediaIds.PLAYLISTS, getString(R.string.library_playlists), MediaMetadata.MEDIA_TYPE_FOLDER_PLAYLISTS),
         folderItem(MediaIds.ALBUMS, getString(R.string.library_albums), MediaMetadata.MEDIA_TYPE_FOLDER_ALBUMS),
         folderItem(MediaIds.ARTISTS, getString(R.string.library_artists), MediaMetadata.MEDIA_TYPE_FOLDER_ARTISTS),
         folderItem(MediaIds.FOLDERS, getString(R.string.library_folders), MediaMetadata.MEDIA_TYPE_FOLDER_MIXED),
@@ -359,6 +360,8 @@ class PlaybackService : MediaLibraryService() {
 
     private fun Folder.toBrowsable() = toMediaItem(songCount(songs.size))
 
+    private fun Playlist.toBrowsable() = toMediaItem(songCount(songIds.size))
+
     private suspend fun childrenOf(parentId: String): List<MediaItem>? {
         if (parentId == MediaIds.ROOT) return rootFolders()
         val library = repository.getLibrary()
@@ -367,10 +370,14 @@ class PlaybackService : MediaLibraryService() {
             MediaIds.ALBUMS -> library.albums.map { it.toBrowsable() }
             MediaIds.ARTISTS -> library.artists.map { it.toBrowsable() }
             MediaIds.FOLDERS -> library.folders.map { it.toBrowsable() }
+            MediaIds.PLAYLISTS -> playlistRepository.load().map { it.toBrowsable() }
             else -> {
                 val songs = MediaIds.parseAlbumId(parentId)?.let { library.album(it)?.songs }
                     ?: MediaIds.parseArtist(parentId)?.let { library.artist(it)?.songs }
                     ?: MediaIds.parseFolder(parentId)?.let { library.folder(it)?.songs }
+                    ?: MediaIds.parsePlaylistId(parentId)?.let { id ->
+                        playlistRepository.load().firstOrNull { it.id == id }?.songsIn(library)
+                    }
                 songs?.map { it.toMediaItem() }
             }
         }
@@ -384,5 +391,8 @@ class PlaybackService : MediaLibraryService() {
             ?: MediaIds.parseAlbumId(mediaId)?.let { library.album(it)?.toBrowsable() }
             ?: MediaIds.parseArtist(mediaId)?.let { library.artist(it)?.toBrowsable() }
             ?: MediaIds.parseFolder(mediaId)?.let { library.folder(it)?.toBrowsable() }
+            ?: MediaIds.parsePlaylistId(mediaId)?.let { id ->
+                playlistRepository.load().firstOrNull { it.id == id }?.toBrowsable()
+            }
     }
 }

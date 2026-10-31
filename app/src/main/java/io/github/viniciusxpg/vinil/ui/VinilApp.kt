@@ -1,11 +1,19 @@
 package io.github.viniciusxpg.vinil.ui
 
+import android.content.Context
 import android.content.Intent
 import android.net.Uri
 import android.provider.Settings
+import android.widget.Toast
 import androidx.activity.compose.BackHandler
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.filled.PlaylistAdd
+import androidx.compose.material.icons.filled.Delete
+import androidx.compose.material.icons.filled.Edit
+import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
@@ -15,32 +23,60 @@ import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.saveable.rememberSaveableStateHolder
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.res.stringResource
 import androidx.lifecycle.compose.LifecycleResumeEffect
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
 import io.github.viniciusxpg.vinil.R
 import io.github.viniciusxpg.vinil.data.Library
+import io.github.viniciusxpg.vinil.data.Playlist
+import io.github.viniciusxpg.vinil.data.Song
 import io.github.viniciusxpg.vinil.playback.MediaIds
+import io.github.viniciusxpg.vinil.ui.components.AddToPlaylistDialog
+import io.github.viniciusxpg.vinil.ui.components.DeletePlaylistDialog
 import io.github.viniciusxpg.vinil.ui.components.MiniPlayer
+import io.github.viniciusxpg.vinil.ui.components.PlaylistNameDialog
+import io.github.viniciusxpg.vinil.ui.components.SongActions
 import io.github.viniciusxpg.vinil.ui.components.quantityString
 import io.github.viniciusxpg.vinil.ui.screens.CollectionScreen
 import io.github.viniciusxpg.vinil.ui.screens.CollectionUi
 import io.github.viniciusxpg.vinil.ui.screens.LibraryScreen
 import io.github.viniciusxpg.vinil.ui.screens.NowPlayingScreen
 import io.github.viniciusxpg.vinil.ui.screens.PermissionScreen
+import io.github.viniciusxpg.vinil.ui.screens.SearchScreen
 import io.github.viniciusxpg.vinil.util.PermissionUtils
+
+private const val ROUTE_SEARCH = "search"
+private const val ROUTE_LIBRARY = "library"
 
 @Composable
 fun VinilApp(viewModel: PlayerViewModel = viewModel()) {
     val context = LocalContext.current
     val state by viewModel.uiState.collectAsStateWithLifecycle()
+    val playlists by viewModel.playlists.collectAsStateWithLifecycle()
 
     var hasPermission by remember { mutableStateOf(PermissionUtils.hasAudioPermission(context)) }
     var showNowPlaying by rememberSaveable { mutableStateOf(false) }
-    // Álbum, artista ou pasta aberto, identificado pelo mediaId (ex.: "album:42").
-    var openCollectionId by rememberSaveable { mutableStateOf<String?>(null) }
-    // Mantém a aba e a rolagem da biblioteca ao entrar e sair de um álbum/artista/pasta.
+
+    // Pilha de telas abertas sobre a biblioteca: "search" ou um mediaId
+    // de coleção ("album:42", "playlist:3"...). Vazia = biblioteca.
+    var backStack by rememberSaveable { mutableStateOf(listOf<String>()) }
+    // Mantém a aba, a rolagem e o texto da busca de cada tela ao navegar.
     val stateHolder = rememberSaveableStateHolder()
+    fun push(route: String) {
+        backStack = backStack + route
+    }
+    fun pop() {
+        val top = backStack.lastOrNull() ?: return
+        backStack = backStack.dropLast(1)
+        stateHolder.removeState(top)
+    }
+
+    // Diálogos de playlist.
+    var songsToAdd by remember { mutableStateOf<List<Song>?>(null) }
+    var newPlaylistSongs by remember { mutableStateOf<List<Song>?>(null) }
+    var playlistToRename by remember { mutableStateOf<Playlist?>(null) }
+    var playlistToDelete by remember { mutableStateOf<Playlist?>(null) }
 
     val permissionLauncher = rememberLauncherForActivityResult(
         ActivityResultContracts.RequestMultiplePermissions(),
@@ -73,14 +109,21 @@ fun VinilApp(viewModel: PlayerViewModel = viewModel()) {
         return
     }
 
-    val collection = openCollectionId?.let { collectionFor(it, state.library) }
+    val route = backStack.lastOrNull()
+    val collection = route?.takeIf { it != ROUTE_SEARCH }?.let { collectionFor(it, state.library, playlists) }
 
-    // Se o item aberto sumiu (ex.: após atualizar a biblioteca), volta para a lista.
-    LaunchedEffect(openCollectionId, collection, state.isLoading) {
-        if (openCollectionId != null && collection == null && !state.isLoading) {
-            openCollectionId = null
-        }
+    // Se o item aberto sumiu (playlist excluída, música apagada...), volta uma tela.
+    LaunchedEffect(route, collection, state.isLoading) {
+        if (route != null && route != ROUTE_SEARCH && collection == null && !state.isLoading) pop()
     }
+
+    val songActions = SongActions(
+        onPlayNext = { song ->
+            viewModel.playNext(song)
+            context.toast(context.getString(R.string.play_next_done))
+        },
+        onAddToPlaylist = { songs -> songsToAdd = songs },
+    )
 
     val miniPlayer: @Composable () -> Unit = {
         MiniPlayer(
@@ -106,32 +149,154 @@ fun VinilApp(viewModel: PlayerViewModel = viewModel()) {
             )
         }
 
-        collection != null -> {
-            BackHandler { openCollectionId = null }
-            CollectionScreen(
-                collection = collection,
-                currentMediaId = state.current?.mediaId,
-                onBack = { openCollectionId = null },
-                onPlay = { index -> viewModel.playSongs(collection.songs, index) },
-                onShuffle = { viewModel.shuffleSongs(collection.songs) },
-                miniPlayer = miniPlayer,
-            )
+        route == ROUTE_SEARCH -> {
+            BackHandler { pop() }
+            stateHolder.SaveableStateProvider(ROUTE_SEARCH) {
+                SearchScreen(
+                    library = state.library,
+                    playlists = playlists,
+                    currentMediaId = state.current?.mediaId,
+                    songActions = songActions,
+                    onBack = { pop() },
+                    onPlaySongs = viewModel::playSongs,
+                    onOpenCollection = { push(it) },
+                    miniPlayer = miniPlayer,
+                )
+            }
         }
 
-        else -> stateHolder.SaveableStateProvider("library") {
+        route != null && collection != null -> {
+            BackHandler { pop() }
+            val playlist = collection.playlistId?.let { id -> playlists.firstOrNull { it.id == id } }
+            stateHolder.SaveableStateProvider(route) {
+                CollectionScreen(
+                    collection = collection,
+                    currentMediaId = state.current?.mediaId,
+                    onBack = { pop() },
+                    onPlay = { index -> viewModel.playSongs(collection.songs, index) },
+                    onShuffle = { viewModel.shuffleSongs(collection.songs) },
+                    songActions = if (playlist != null) {
+                        SongActions(
+                            onPlayNext = songActions.onPlayNext,
+                            onAddToPlaylist = songActions.onAddToPlaylist,
+                            onRemoveFromPlaylist = { song -> viewModel.removeFromPlaylist(playlist.id, song.id) },
+                        )
+                    } else {
+                        songActions
+                    },
+                    miniPlayer = miniPlayer,
+                    emptyMessage = if (playlist != null) stringResource(R.string.playlist_empty) else null,
+                    topBarActions = {
+                        if (playlist != null) {
+                            IconButton(onClick = { playlistToRename = playlist }) {
+                                Icon(Icons.Filled.Edit, contentDescription = stringResource(R.string.playlist_rename))
+                            }
+                            IconButton(onClick = { playlistToDelete = playlist }) {
+                                Icon(Icons.Filled.Delete, contentDescription = stringResource(R.string.playlist_delete))
+                            }
+                        } else {
+                            IconButton(onClick = { songsToAdd = collection.songs }) {
+                                Icon(
+                                    Icons.AutoMirrored.Filled.PlaylistAdd,
+                                    contentDescription = stringResource(R.string.action_add_to_playlist),
+                                )
+                            }
+                        }
+                    },
+                )
+            }
+        }
+
+        else -> stateHolder.SaveableStateProvider(ROUTE_LIBRARY) {
             LibraryScreen(
                 state = state,
+                playlists = playlists,
+                songActions = songActions,
                 onPlaySongs = viewModel::playSongs,
-                onOpenCollection = { openCollectionId = it },
+                onOpenCollection = { push(it) },
+                onCreatePlaylist = { newPlaylistSongs = emptyList() },
+                onOpenSearch = { push(ROUTE_SEARCH) },
                 onRefresh = { viewModel.loadLibrary(forceRefresh = true) },
                 miniPlayer = miniPlayer,
             )
         }
     }
+
+    // ---- Diálogos ----------------------------------------------------------------------
+
+    songsToAdd?.let { songs ->
+        AddToPlaylistDialog(
+            playlists = playlists,
+            onDismiss = { songsToAdd = null },
+            onPick = { playlist ->
+                songsToAdd = null
+                viewModel.addToPlaylist(playlist.id, songs) { added ->
+                    context.toast(
+                        if (added == 0) {
+                            context.getString(R.string.playlist_already_contains, playlist.name)
+                        } else {
+                            context.resources.getQuantityString(
+                                R.plurals.songs_added_to_playlist,
+                                added,
+                                added,
+                                playlist.name,
+                            )
+                        },
+                    )
+                }
+            },
+            onCreateNew = {
+                songsToAdd = null
+                newPlaylistSongs = songs
+            },
+        )
+    }
+
+    newPlaylistSongs?.let { songs ->
+        PlaylistNameDialog(
+            title = stringResource(R.string.playlist_new),
+            confirmLabel = stringResource(R.string.playlist_create),
+            onDismiss = { newPlaylistSongs = null },
+            onConfirm = { name ->
+                newPlaylistSongs = null
+                viewModel.createPlaylist(name, songs) { playlist ->
+                    context.toast(context.getString(R.string.playlist_created, playlist.name))
+                }
+            },
+        )
+    }
+
+    playlistToRename?.let { playlist ->
+        PlaylistNameDialog(
+            title = stringResource(R.string.playlist_rename),
+            confirmLabel = stringResource(R.string.playlist_save),
+            initialName = playlist.name,
+            onDismiss = { playlistToRename = null },
+            onConfirm = { name ->
+                playlistToRename = null
+                viewModel.renamePlaylist(playlist.id, name)
+            },
+        )
+    }
+
+    playlistToDelete?.let { playlist ->
+        DeletePlaylistDialog(
+            playlist = playlist,
+            onDismiss = { playlistToDelete = null },
+            onConfirm = {
+                playlistToDelete = null
+                viewModel.deletePlaylist(playlist.id)
+            },
+        )
+    }
+}
+
+private fun Context.toast(message: String) {
+    Toast.makeText(this, message, Toast.LENGTH_SHORT).show()
 }
 
 @Composable
-private fun collectionFor(mediaId: String, library: Library): CollectionUi? {
+private fun collectionFor(mediaId: String, library: Library, playlists: List<Playlist>): CollectionUi? {
     MediaIds.parseAlbumId(mediaId)?.let { id ->
         val album = library.album(id) ?: return null
         return CollectionUi(
@@ -158,6 +323,17 @@ private fun collectionFor(mediaId: String, library: Library): CollectionUi? {
             subtitle = folder.path + " • " + quantityString(R.plurals.song_count, folder.songs.size),
             songs = folder.songs,
             showArtwork = true,
+        )
+    }
+    MediaIds.parsePlaylistId(mediaId)?.let { id ->
+        val playlist = playlists.firstOrNull { it.id == id } ?: return null
+        val songs = playlist.songsIn(library)
+        return CollectionUi(
+            title = playlist.name,
+            subtitle = quantityString(R.plurals.song_count, songs.size),
+            songs = songs,
+            showArtwork = true,
+            playlistId = playlist.id,
         )
     }
     return null

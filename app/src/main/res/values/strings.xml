@@ -41,4 +41,35 @@
     <string name="action_shuffle">Aleatório</string>
     <string name="action_repeat">Repetir</string>
     <string name="action_close">Fechar</string>
+    <string name="library_playlists">Playlists</string>
+
+    <string name="action_search">Buscar</string>
+    <string name="search_hint">Músicas, álbuns, artistas…</string>
+    <string name="search_prompt">Digite o nome de uma música, álbum, artista ou playlist.</string>
+    <string name="search_no_results">Nada encontrado para “%1$s”.</string>
+    <string name="action_clear">Limpar</string>
+
+    <string name="playlist_new">Nova playlist</string>
+    <string name="playlist_name">Nome da playlist</string>
+    <string name="playlist_create">Criar</string>
+    <string name="playlist_rename">Renomear playlist</string>
+    <string name="playlist_save">Salvar</string>
+    <string name="playlist_delete">Excluir playlist</string>
+    <string name="playlist_delete_message">Excluir a playlist “%1$s”? As músicas continuam no aparelho.</string>
+    <string name="playlist_empty">Playlist vazia. Use o menu ⋮ de qualquer música para adicionar músicas aqui.</string>
+    <string name="playlist_created">Playlist “%1$s” criada</string>
+    <string name="playlist_already_contains">Já está em “%1$s”</string>
+    <string name="action_delete">Excluir</string>
+    <string name="action_cancel">Cancelar</string>
+    <string name="action_more">Mais opções</string>
+    <string name="action_add_to_playlist">Adicionar à playlist</string>
+    <string name="action_play_next">Tocar em seguida</string>
+    <string name="action_remove_from_playlist">Remover da playlist</string>
+    <string name="play_next_done">Vai tocar em seguida</string>
+
+    <plurals name="songs_added_to_playlist">
+        <item quantity="one">%1$d música adicionada a “%2$s”</item>
+        <item quantity="many">%1$d músicas adicionadas a “%2$s”</item>
+        <item quantity="other">%1$d músicas adicionadas a “%2$s”</item>
+    </plurals>
 </resources>

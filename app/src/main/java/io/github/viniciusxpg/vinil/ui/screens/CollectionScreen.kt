@@ -4,6 +4,7 @@ import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.RowScope
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
@@ -37,6 +38,7 @@ import io.github.viniciusxpg.vinil.data.Song
 import io.github.viniciusxpg.vinil.data.uri
 import io.github.viniciusxpg.vinil.playback.MediaIds
 import io.github.viniciusxpg.vinil.ui.components.AlbumArt
+import io.github.viniciusxpg.vinil.ui.components.SongActions
 import io.github.viniciusxpg.vinil.ui.components.SongRow
 
 /** Dados de um álbum, artista ou pasta aberto. */
@@ -46,9 +48,11 @@ data class CollectionUi(
     val songs: List<Song>,
     /** Falso em álbuns: as linhas mostram o número da faixa em vez da capa. */
     val showArtwork: Boolean,
+    /** Preenchido quando a coleção é uma playlist do usuário. */
+    val playlistId: Long? = null,
 )
 
-/** Tela de um álbum, artista ou pasta: cabeçalho com capa e botões, e a lista de músicas. */
+/** Tela de um álbum, artista, pasta ou playlist: cabeçalho com capa e botões, e a lista de músicas. */
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun CollectionScreen(
@@ -57,7 +61,10 @@ fun CollectionScreen(
     onBack: () -> Unit,
     onPlay: (Int) -> Unit,
     onShuffle: () -> Unit,
+    songActions: SongActions,
     miniPlayer: @Composable () -> Unit,
+    emptyMessage: String? = null,
+    topBarActions: @Composable RowScope.() -> Unit = {},
 ) {
     Scaffold(
         topBar = {
@@ -71,6 +78,7 @@ fun CollectionScreen(
                         )
                     }
                 },
+                actions = topBarActions,
             )
         },
         bottomBar = miniPlayer,
@@ -86,7 +94,18 @@ fun CollectionScreen(
                     onClick = { onPlay(index) },
                     showArtwork = collection.showArtwork,
                     position = index,
+                    actions = songActions,
                 )
+            }
+            if (collection.songs.isEmpty() && emptyMessage != null) {
+                item(key = "empty") {
+                    Text(
+                        text = emptyMessage,
+                        style = MaterialTheme.typography.bodyMedium,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        modifier = Modifier.padding(horizontal = 16.dp, vertical = 24.dp),
+                    )
+                }
             }
         }
     }

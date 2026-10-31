@@ -6,7 +6,10 @@ Tocador de música para Android, nativo, em **Kotlin + Jetpack Compose + Media3 
 
 ## Funcionalidades
 
-- Biblioteca em abas: **Músicas, Álbuns, Artistas e Pastas** (deslize para trocar de aba)
+- Biblioteca em abas: **Músicas, Playlists, Álbuns, Artistas e Pastas** (deslize para trocar de aba)
+- **Playlists**: criar, renomear, excluir, adicionar músicas (menu ⋮ ou um álbum/artista/pasta inteiro) e remover
+- **Busca** por músicas, álbuns, artistas e playlists, sem diferenciar acentos ("acucar" encontra "Açúcar")
+- **Tocar em seguida**: coloca uma música logo depois da atual
 - Telas de álbum, artista e pasta com botões **Tocar** e **Aleatório**; álbuns em ordem de faixa
 - **Retoma de onde parou**: ao reabrir o app (ou apertar play no fone com o app fechado) volta à última música, na mesma posição, com a mesma fila
 - Tela "Tocando agora" com barra de progresso, aleatório e repetir (desligado / tudo / uma)
@@ -14,7 +17,7 @@ Tocador de música para Android, nativo, em **Kotlin + Jetpack Compose + Media3 
 - **Reprodução em segundo plano** com notificação, controles na tela de bloqueio e botões de fones Bluetooth
 - Pausa automaticamente em ligações (foco de áudio) e ao desconectar o fone
 - Busca por voz ("Ok Google, tocar ... no Vinil"), inclusive no Android Auto
-- **Android Auto**: navegação por músicas, álbuns, artistas e pastas direto na central do carro
+- **Android Auto**: navegação por músicas, playlists, álbuns, artistas e pastas direto na central do carro
 - Material You (cores do papel de parede) no Android 12+, tema claro e escuro
 
 ## Requisitos
@@ -51,6 +54,9 @@ app/src/main/java/io/github/viniciusxpg/vinil/
 ├── data/
 │   ├── Song.kt                  # modelos Song, Album, Artist e Folder
 │   ├── Library.kt               # agrupamento por álbum, artista e pasta
+│   ├── Search.kt                # busca sem acentos
+│   ├── Playlist.kt              # modelo e JSON das playlists
+│   ├── PlaylistRepository.kt    # playlists salvas em playlists.json
 │   └── MusicRepository.kt       # leitura do MediaStore + cache
 ├── playback/
 │   ├── PlaybackService.kt       # MediaLibraryService: ExoPlayer, notificação, Android Auto
@@ -60,8 +66,8 @@ app/src/main/java/io/github/viniciusxpg/vinil/
 ├── ui/
 │   ├── VinilApp.kt              # permissões e navegação entre telas
 │   ├── PlayerViewModel.kt       # MVVM: MediaController -> StateFlow
-│   ├── components/              # AlbumArt, MiniPlayer, SongRow
-│   ├── screens/                 # Library (abas), Collection, NowPlaying, Permission
+│   ├── components/              # AlbumArt, MiniPlayer, SongRow (menu ⋮), diálogos de playlist
+│   ├── screens/                 # Library (abas), Collection, Search, NowPlaying, Permission
 │   └── theme/                   # tema Material 3
 └── util/                        # permissões, formatação de tempo
 ```
@@ -81,6 +87,4 @@ com o app fechado e todos os controles ficam sincronizados.
 
 ## Próximos passos
 
-- Playlists salvas localmente (Room)
-- Busca
 - Equalizador

@@ -10,6 +10,8 @@ package io.github.viniciusxpg.vinil.playback
  * ├── songs              -> song:{id}, ...
  * ├── albums             -> album:{id}, ...
  * │   └── album:{id}     -> song:{id}, ...
+ * ├── playlists          -> playlist:{id}, ...
+ * │   └── playlist:{id}  -> song:{id}, ...
  * ├── artists            -> artist:{nome}, ...
  * │   └── artist:{nome}  -> song:{id}, ...
  * └── folders            -> folder:{caminho}, ...
@@ -22,11 +24,13 @@ object MediaIds {
     const val ALBUMS = "albums"
     const val ARTISTS = "artists"
     const val FOLDERS = "folders"
+    const val PLAYLISTS = "playlists"
 
     private const val SONG_PREFIX = "song:"
     private const val ALBUM_PREFIX = "album:"
     private const val ARTIST_PREFIX = "artist:"
     private const val FOLDER_PREFIX = "folder:"
+    private const val PLAYLIST_PREFIX = "playlist:"
 
     fun song(id: Long): String = "$SONG_PREFIX$id"
 
@@ -36,6 +40,8 @@ object MediaIds {
 
     fun folder(path: String): String = "$FOLDER_PREFIX$path"
 
+    fun playlist(id: Long): String = "$PLAYLIST_PREFIX$id"
+
     fun parseSongId(mediaId: String): Long? = suffix(mediaId, SONG_PREFIX)?.toLongOrNull()
 
     fun parseAlbumId(mediaId: String): Long? = suffix(mediaId, ALBUM_PREFIX)?.toLongOrNull()
@@ -43,6 +49,8 @@ object MediaIds {
     fun parseArtist(mediaId: String): String? = suffix(mediaId, ARTIST_PREFIX)
 
     fun parseFolder(mediaId: String): String? = suffix(mediaId, FOLDER_PREFIX)
+
+    fun parsePlaylistId(mediaId: String): Long? = suffix(mediaId, PLAYLIST_PREFIX)?.toLongOrNull()
 
     private fun suffix(mediaId: String, prefix: String): String? =
         if (mediaId.startsWith(prefix)) mediaId.substring(prefix.length) else null

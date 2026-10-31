@@ -24,17 +24,20 @@ import androidx.compose.foundation.pager.HorizontalPager
 import androidx.compose.foundation.pager.rememberPagerState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.Folder
+import androidx.compose.material.icons.filled.LibraryMusic
 import androidx.compose.material.icons.filled.MusicOff
 import androidx.compose.material.icons.filled.Refresh
+import androidx.compose.material.icons.filled.Search
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.ListItem
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.PrimaryTabRow
 import androidx.compose.material3.Scaffold
+import androidx.compose.material3.ScrollableTabRow
 import androidx.compose.material3.Tab
 import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBar
@@ -43,6 +46,7 @@ import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
@@ -52,25 +56,28 @@ import io.github.viniciusxpg.vinil.R
 import io.github.viniciusxpg.vinil.data.Album
 import io.github.viniciusxpg.vinil.data.Artist
 import io.github.viniciusxpg.vinil.data.Folder
+import io.github.viniciusxpg.vinil.data.Playlist
 import io.github.viniciusxpg.vinil.data.Song
 import io.github.viniciusxpg.vinil.data.uri
 import io.github.viniciusxpg.vinil.playback.MediaIds
 import io.github.viniciusxpg.vinil.ui.PlayerUiState
 import io.github.viniciusxpg.vinil.ui.components.AlbumArt
+import io.github.viniciusxpg.vinil.ui.components.SongActions
 import io.github.viniciusxpg.vinil.ui.components.SongRow
 import io.github.viniciusxpg.vinil.ui.components.quantityString
 import kotlinx.coroutines.launch
 
 private enum class LibraryTab(@StringRes val title: Int) {
     SONGS(R.string.tab_songs),
+    PLAYLISTS(R.string.library_playlists),
     ALBUMS(R.string.library_albums),
     ARTISTS(R.string.library_artists),
     FOLDERS(R.string.library_folders),
 }
 
 /**
- * Tela principal com as abas Músicas, Álbuns, Artistas e Pastas (troca deslizando
- * para os lados ou tocando na aba).
+ * Tela principal com as abas Músicas, Playlists, Álbuns, Artistas e Pastas (troca
+ * deslizando para os lados ou tocando na aba).
  *
  * @param onOpenCollection abre um álbum, artista ou pasta pelo seu mediaId (ver [MediaIds]).
  */
@@ -78,8 +85,12 @@ private enum class LibraryTab(@StringRes val title: Int) {
 @Composable
 fun LibraryScreen(
     state: PlayerUiState,
+    playlists: List<Playlist>,
+    songActions: SongActions,
     onPlaySongs: (List<Song>, Int) -> Unit,
     onOpenCollection: (String) -> Unit,
+    onCreatePlaylist: () -> Unit,
+    onOpenSearch: () -> Unit,
     onRefresh: () -> Unit,
     miniPlayer: @Composable () -> Unit,
 ) {
@@ -94,6 +105,12 @@ fun LibraryScreen(
                 TopAppBar(
                     title = { Text(stringResource(R.string.app_name)) },
                     actions = {
+                        IconButton(onClick = onOpenSearch) {
+                            Icon(
+                                Icons.Filled.Search,
+                                contentDescription = stringResource(R.string.action_search),
+                            )
+                        }
                         IconButton(onClick = onRefresh) {
                             Icon(
                                 Icons.Filled.Refresh,
@@ -102,7 +119,7 @@ fun LibraryScreen(
                         }
                     },
                 )
-                PrimaryTabRow(selectedTabIndex = pagerState.currentPage) {
+                ScrollableTabRow(selectedTabIndex = pagerState.currentPage, edgePadding = 8.dp) {
                     tabs.forEachIndexed { index, tab ->
                         Tab(
                             selected = pagerState.currentPage == index,
@@ -142,6 +159,26 @@ fun LibraryScreen(
                                 song = song,
                                 isCurrent = currentId == MediaIds.song(song.id),
                                 onClick = { onPlaySongs(library.songs, index) },
+                                actions = songActions,
+                            )
+                        }
+                    }
+
+                    LibraryTab.PLAYLISTS -> LazyColumn(contentPadding = PaddingValues(bottom = bottom)) {
+                        item(key = "new") {
+                            IconRow(
+                                icon = Icons.Filled.Add,
+                                title = stringResource(R.string.playlist_new),
+                                subtitle = null,
+                                onClick = onCreatePlaylist,
+                            )
+                        }
+                        items(playlists, key = { it.id }) { playlist ->
+                            IconRow(
+                                icon = Icons.Filled.LibraryMusic,
+                                title = playlist.name,
+                                subtitle = quantityString(R.plurals.song_count, playlist.songIds.size),
+                                onClick = { onOpenCollection(MediaIds.playlist(playlist.id)) },
                             )
                         }
                     }
@@ -235,6 +272,17 @@ private fun ArtistRow(artist: Artist, onClick: () -> Unit) {
 
 @Composable
 private fun FolderRow(folder: Folder, onClick: () -> Unit) {
+    IconRow(
+        icon = Icons.Filled.Folder,
+        title = folder.name,
+        subtitle = folder.path + " • " + quantityString(R.plurals.song_count, folder.songs.size),
+        onClick = onClick,
+    )
+}
+
+/** Linha com ícone num quadrado colorido (pastas, playlists, "Nova playlist"). */
+@Composable
+private fun IconRow(icon: ImageVector, title: String, subtitle: String?, onClick: () -> Unit) {
     ListItem(
         modifier = Modifier.clickable(onClick = onClick),
         leadingContent = {
@@ -245,20 +293,12 @@ private fun FolderRow(folder: Folder, onClick: () -> Unit) {
                     .background(MaterialTheme.colorScheme.secondaryContainer),
                 contentAlignment = Alignment.Center,
             ) {
-                Icon(
-                    Icons.Filled.Folder,
-                    contentDescription = null,
-                    tint = MaterialTheme.colorScheme.onSecondaryContainer,
-                )
+                Icon(icon, contentDescription = null, tint = MaterialTheme.colorScheme.onSecondaryContainer)
             }
         },
-        headlineContent = { Text(folder.name, maxLines = 1, overflow = TextOverflow.Ellipsis) },
-        supportingContent = {
-            Text(
-                folder.path + " • " + quantityString(R.plurals.song_count, folder.songs.size),
-                maxLines = 1,
-                overflow = TextOverflow.Ellipsis,
-            )
+        headlineContent = { Text(title, maxLines = 1, overflow = TextOverflow.Ellipsis) },
+        supportingContent = subtitle?.let { text ->
+            { Text(text, maxLines = 1, overflow = TextOverflow.Ellipsis) }
         },
     )
 }

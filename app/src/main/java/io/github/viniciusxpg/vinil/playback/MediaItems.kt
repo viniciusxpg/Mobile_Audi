@@ -7,6 +7,7 @@ import androidx.media3.common.MediaMetadata
 import io.github.viniciusxpg.vinil.data.Album
 import io.github.viniciusxpg.vinil.data.Artist
 import io.github.viniciusxpg.vinil.data.Folder
+import io.github.viniciusxpg.vinil.data.Playlist
 import io.github.viniciusxpg.vinil.data.Song
 import io.github.viniciusxpg.vinil.data.uri
 
@@ -59,6 +60,14 @@ fun Folder.toMediaItem(songCountLabel: String): MediaItem =
         title = name,
         subtitle = songCountLabel,
         mediaType = MediaMetadata.MEDIA_TYPE_FOLDER_MIXED,
+    )
+
+fun Playlist.toMediaItem(songCountLabel: String): MediaItem =
+    browsableItem(
+        mediaId = MediaIds.playlist(id),
+        title = name,
+        subtitle = songCountLabel,
+        mediaType = MediaMetadata.MEDIA_TYPE_PLAYLIST,
     )
 
 /** Pasta da raiz da biblioteca ("Todas as músicas", "Álbuns"...). */
