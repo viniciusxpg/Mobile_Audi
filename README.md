@@ -10,6 +10,7 @@ Tocador de música para Android, nativo, em **Kotlin + Jetpack Compose + Media3 
 - **Playlists**: criar, renomear, excluir, adicionar músicas (menu ⋮ ou um álbum/artista/pasta inteiro) e remover
 - **Busca** por músicas, álbuns, artistas e playlists, sem diferenciar acentos ("acucar" encontra "Açúcar")
 - **Tocar em seguida**: coloca uma música logo depois da atual
+- **Fila de reprodução**: veja o que vem a seguir (na ordem real, inclusive no aleatório), pule para uma música, remova, limpe ou arraste para reordenar
 - Telas de álbum, artista e pasta com botões **Tocar** e **Aleatório**; álbuns em ordem de faixa
 - **Retoma de onde parou**: ao reabrir o app (ou apertar play no fone com o app fechado) volta à última música, na mesma posição, com a mesma fila
 - Tela "Tocando agora" com barra de progresso, aleatório e repetir (desligado / tudo / uma)
@@ -70,7 +71,7 @@ app/src/main/java/io/github/viniciusxpg/vinil/
 │   ├── VinilApp.kt              # permissões e navegação entre telas
 │   ├── PlayerViewModel.kt       # MVVM: MediaController -> StateFlow
 │   ├── components/              # AlbumArt, MiniPlayer, SongRow (menu ⋮), diálogos de playlist
-│   ├── screens/                 # Library (abas), Collection, Search, NowPlaying, Equalizer, Permission
+│   ├── screens/                 # Library (abas), Collection, Search, NowPlaying, Queue, Equalizer, Permission
 │   └── theme/                   # tema Material 3
 └── util/                        # permissões, formatação de tempo e de frequência
 ```

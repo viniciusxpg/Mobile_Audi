@@ -54,6 +54,25 @@ data class PlayerUiState(
         get() = if (durationMs > 0) (positionMs.toFloat() / durationMs).coerceIn(0f, 1f) else 0f
 }
 
+/** Uma música na fila; [index] é a posição dela na fila do player. */
+data class QueueEntry(
+    val index: Int,
+    val mediaId: String,
+    val title: String,
+    val artist: String,
+    val contentUri: Uri?,
+)
+
+/**
+ * Fila de reprodução: a música atual e as próximas na ordem em que vão tocar
+ * (com o aleatório ligado, é a ordem sorteada).
+ */
+data class QueueState(
+    val current: QueueEntry? = null,
+    val upNext: List<QueueEntry> = emptyList(),
+    val shuffle: Boolean = false,
+)
+
 class PlayerViewModel(application: Application) : AndroidViewModel(application) {
 
     private val repository = MusicRepository.getInstance(application)
@@ -80,6 +99,9 @@ class PlayerViewModel(application: Application) : AndroidViewModel(application) 
     private val _uiState = MutableStateFlow(PlayerUiState())
     val uiState: StateFlow<PlayerUiState> = _uiState.asStateFlow()
 
+    private val _queue = MutableStateFlow(QueueState())
+    val queue: StateFlow<QueueState> = _queue.asStateFlow()
+
     private var controllerFuture: ListenableFuture<MediaController>? = null
     private var controller: MediaController? = null
     private var progressJob: Job? = null
@@ -87,6 +109,15 @@ class PlayerViewModel(application: Application) : AndroidViewModel(application) 
     private val playerListener = object : Player.Listener {
         override fun onEvents(player: Player, events: Player.Events) {
             syncFromPlayer(player)
+            if (events.containsAny(
+                    Player.EVENT_TIMELINE_CHANGED,
+                    Player.EVENT_MEDIA_ITEM_TRANSITION,
+                    Player.EVENT_SHUFFLE_MODE_ENABLED_CHANGED,
+                    Player.EVENT_MEDIA_METADATA_CHANGED,
+                )
+            ) {
+                _queue.value = buildQueue(player)
+            }
         }
     }
 
@@ -106,6 +137,7 @@ class PlayerViewModel(application: Application) : AndroidViewModel(application) 
                 controller = connected
                 connected.addListener(playerListener)
                 syncFromPlayer(connected)
+                _queue.value = buildQueue(connected)
             },
             ContextCompat.getMainExecutor(app),
         )
@@ -199,6 +231,68 @@ class PlayerViewModel(application: Application) : AndroidViewModel(application) 
     fun seekTo(positionMs: Long) {
         controller?.seekTo(positionMs)
         _uiState.update { it.copy(positionMs = positionMs) }
+    }
+
+    // ---- Fila ------------------------------------------------------------------------
+
+    fun playQueueItem(index: Int) {
+        val player = controller ?: return
+        if (index !in 0 until player.mediaItemCount) return
+        player.seekToDefaultPosition(index)
+        player.play()
+    }
+
+    fun removeFromQueue(index: Int) {
+        val player = controller ?: return
+        if (index in 0 until player.mediaItemCount) player.removeMediaItem(index)
+    }
+
+    /** Move uma música da posição [from] para [to] da fila (aleatório desligado). */
+    fun moveInQueue(from: Int, to: Int) {
+        val player = controller ?: return
+        val count = player.mediaItemCount
+        if (from !in 0 until count || to !in 0 until count || from == to) return
+        player.moveMediaItem(from, to)
+    }
+
+    /** Remove todas as músicas que viriam depois da atual. */
+    fun clearUpNext() {
+        val player = controller ?: return
+        val current = player.currentMediaItemIndex
+        if (!player.shuffleModeEnabled) {
+            if (current + 1 < player.mediaItemCount) player.removeMediaItems(current + 1, player.mediaItemCount)
+        } else {
+            _queue.value.upNext.map { it.index }.sortedDescending().forEach(player::removeMediaItem)
+        }
+    }
+
+    private fun buildQueue(player: Player): QueueState {
+        val count = player.mediaItemCount
+        val currentIndex = player.currentMediaItemIndex
+        if (count == 0 || currentIndex !in 0 until count) return QueueState()
+        val timeline = player.currentTimeline
+        val shuffle = player.shuffleModeEnabled
+
+        fun entry(index: Int): QueueEntry {
+            val item = player.getMediaItemAt(index)
+            return QueueEntry(
+                index = index,
+                mediaId = item.mediaId,
+                title = item.mediaMetadata.title?.toString().orEmpty(),
+                artist = item.mediaMetadata.artist?.toString().orEmpty(),
+                contentUri = MediaIds.parseSongId(item.mediaId)?.let(::songContentUri),
+            )
+        }
+
+        val upNext = buildList {
+            if (timeline.isEmpty) return@buildList
+            var next = timeline.getNextWindowIndex(currentIndex, Player.REPEAT_MODE_OFF, shuffle)
+            while (next != C.INDEX_UNSET && size < count) {
+                add(entry(next))
+                next = timeline.getNextWindowIndex(next, Player.REPEAT_MODE_OFF, shuffle)
+            }
+        }
+        return QueueState(current = entry(currentIndex), upNext = upNext, shuffle = shuffle)
     }
 
     fun toggleShuffle() {

@@ -44,6 +44,7 @@ import io.github.viniciusxpg.vinil.ui.screens.EqualizerScreen
 import io.github.viniciusxpg.vinil.ui.screens.LibraryScreen
 import io.github.viniciusxpg.vinil.ui.screens.NowPlayingScreen
 import io.github.viniciusxpg.vinil.ui.screens.PermissionScreen
+import io.github.viniciusxpg.vinil.ui.screens.QueueScreen
 import io.github.viniciusxpg.vinil.ui.screens.SearchScreen
 import io.github.viniciusxpg.vinil.util.PermissionUtils
 
@@ -56,11 +57,14 @@ fun VinilApp(viewModel: PlayerViewModel = viewModel()) {
     val state by viewModel.uiState.collectAsStateWithLifecycle()
     val playlists by viewModel.playlists.collectAsStateWithLifecycle()
     val equalizerState by viewModel.equalizerState.collectAsStateWithLifecycle()
+    val queue by viewModel.queue.collectAsStateWithLifecycle()
 
     var hasPermission by remember { mutableStateOf(PermissionUtils.hasAudioPermission(context)) }
     var showNowPlaying by rememberSaveable { mutableStateOf(false) }
     // O equalizador abre por cima de qualquer tela e, ao voltar, retorna a ela.
     var showEqualizer by rememberSaveable { mutableStateOf(false) }
+    // A fila abre a partir de "Tocando agora" e volta para ela.
+    var showQueue by rememberSaveable { mutableStateOf(false) }
 
     // Pilha de telas abertas sobre a biblioteca: "search" ou um mediaId
     // de coleção ("album:42", "playlist:3"...). Vazia = biblioteca.
@@ -152,6 +156,18 @@ fun VinilApp(viewModel: PlayerViewModel = viewModel()) {
             )
         }
 
+        showQueue -> {
+            BackHandler { showQueue = false }
+            QueueScreen(
+                queue = queue,
+                onBack = { showQueue = false },
+                onPlay = viewModel::playQueueItem,
+                onRemove = viewModel::removeFromQueue,
+                onMove = viewModel::moveInQueue,
+                onClearUpNext = viewModel::clearUpNext,
+            )
+        }
+
         showNowPlaying && state.current != null -> {
             BackHandler { showNowPlaying = false }
             NowPlayingScreen(
@@ -164,6 +180,7 @@ fun VinilApp(viewModel: PlayerViewModel = viewModel()) {
                 onToggleShuffle = viewModel::toggleShuffle,
                 onCycleRepeat = viewModel::cycleRepeatMode,
                 onOpenEqualizer = { showEqualizer = true },
+                onOpenQueue = { showQueue = true },
             )
         }
 

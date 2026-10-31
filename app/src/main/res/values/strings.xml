@@ -81,4 +81,13 @@
     <string name="equalizer_bands">Faixas de frequência</string>
     <string name="equalizer_bass_boost">Reforço de graves</string>
     <string name="equalizer_reset">Zerar ajustes</string>
+
+    <string name="queue">Fila</string>
+    <string name="queue_up_next">A seguir</string>
+    <string name="queue_empty">A fila está vazia. Toque uma música para começar.</string>
+    <string name="queue_up_next_empty">Nenhuma música depois desta.</string>
+    <string name="queue_shuffle_hint">Aleatório ligado: esta é a ordem sorteada. Desligue o aleatório para reordenar.</string>
+    <string name="queue_clear">Limpar</string>
+    <string name="action_remove_from_queue">Remover da fila</string>
+    <string name="action_reorder">Arrastar para reordenar</string>
 </resources>
