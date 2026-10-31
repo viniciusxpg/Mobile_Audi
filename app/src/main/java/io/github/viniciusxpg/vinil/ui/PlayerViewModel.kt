@@ -11,11 +11,12 @@ import androidx.media3.common.Player
 import androidx.media3.session.MediaController
 import androidx.media3.session.SessionToken
 import com.google.common.util.concurrent.ListenableFuture
+import io.github.viniciusxpg.vinil.data.Library
 import io.github.viniciusxpg.vinil.data.MusicRepository
 import io.github.viniciusxpg.vinil.data.Song
+import io.github.viniciusxpg.vinil.data.songContentUri
 import io.github.viniciusxpg.vinil.playback.MediaIds
 import io.github.viniciusxpg.vinil.playback.PlaybackService
-import io.github.viniciusxpg.vinil.playback.songContentUri
 import io.github.viniciusxpg.vinil.playback.toMediaItem
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.delay
@@ -36,7 +37,7 @@ data class NowPlaying(
 )
 
 data class PlayerUiState(
-    val songs: List<Song> = emptyList(),
+    val library: Library = Library.EMPTY,
     val isLoading: Boolean = true,
     val current: NowPlaying? = null,
     val isPlaying: Boolean = false,
@@ -89,19 +90,26 @@ class PlayerViewModel(application: Application) : AndroidViewModel(application) 
     fun loadLibrary(forceRefresh: Boolean = false) {
         viewModelScope.launch {
             _uiState.update { it.copy(isLoading = true) }
-            val songs = repository.getSongs(forceRefresh)
-            _uiState.update { it.copy(songs = songs, isLoading = false) }
+            val library = repository.getLibrary(forceRefresh)
+            _uiState.update { it.copy(library = library, isLoading = false) }
         }
     }
 
-    /** Toca a lista de músicas começando pela faixa [index]. */
-    fun playSong(index: Int) {
+    /** Toca [songs] (uma aba, álbum, artista ou pasta) começando pela faixa [index]. */
+    fun playSongs(songs: List<Song>, index: Int) {
         val player = controller ?: return
-        val songs = _uiState.value.songs
         if (index !in songs.indices) return
         player.setMediaItems(songs.map { it.toMediaItem() }, index, 0L)
         player.prepare()
         player.play()
+    }
+
+    /** Liga o modo aleatório e toca [songs] começando por uma faixa sorteada. */
+    fun shuffleSongs(songs: List<Song>) {
+        val player = controller ?: return
+        if (songs.isEmpty()) return
+        player.shuffleModeEnabled = true
+        playSongs(songs, songs.indices.random())
     }
 
     fun playPause() {

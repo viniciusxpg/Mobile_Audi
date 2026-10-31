@@ -21,6 +21,13 @@ class MediaIdsTest {
     }
 
     @Test
+    fun artistAndFolderIdsKeepSpecialCharacters() {
+        assertEquals("AC/DC: Live", MediaIds.parseArtist(MediaIds.artist("AC/DC: Live")))
+        assertEquals("Music/Rock", MediaIds.parseFolder(MediaIds.folder("Music/Rock")))
+        assertNull(MediaIds.parseArtist(MediaIds.folder("x")))
+    }
+
+    @Test
     fun pagination() {
         val items = (1..10).toList()
         assertEquals(listOf(1, 2, 3), items.page(0, 3))

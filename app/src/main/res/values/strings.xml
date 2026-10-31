@@ -1,12 +1,28 @@
 <?xml version="1.0" encoding="utf-8"?>
-<resources>
+<resources xmlns:tools="http://schemas.android.com/tools" tools:locale="pt">
     <string name="app_name">Vinil</string>
 
     <string name="library_all_songs">Todas as músicas</string>
     <string name="library_albums">Álbuns</string>
     <string name="unknown_artist">Artista desconhecido</string>
     <string name="unknown_album">Álbum desconhecido</string>
-    <string name="album_song_count">%1$d músicas</string>
+    <string name="library_artists">Artistas</string>
+    <string name="library_folders">Pastas</string>
+    <string name="tab_songs">Músicas</string>
+    <string name="action_play_all">Tocar</string>
+    <string name="action_shuffle_all">Aleatório</string>
+    <string name="action_back">Voltar</string>
+
+    <plurals name="song_count">
+        <item quantity="one">%1$d música</item>
+        <item quantity="many">%1$d músicas</item>
+        <item quantity="other">%1$d músicas</item>
+    </plurals>
+    <plurals name="album_count">
+        <item quantity="one">%1$d álbum</item>
+        <item quantity="many">%1$d álbuns</item>
+        <item quantity="other">%1$d álbuns</item>
+    </plurals>
 
     <string name="now_playing">Tocando agora</string>
     <string name="empty_library_title">Nenhuma música encontrada</string>

@@ -7,29 +7,45 @@ package io.github.viniciusxpg.vinil.playback
  * Árvore de navegação:
  * ```
  * root
- * ├── songs            -> song:{id}, song:{id}, ...
- * └── albums           -> album:{id}, ...
- *     └── album:{id}   -> song:{id}, ...
+ * ├── songs              -> song:{id}, ...
+ * ├── albums             -> album:{id}, ...
+ * │   └── album:{id}     -> song:{id}, ...
+ * ├── artists            -> artist:{nome}, ...
+ * │   └── artist:{nome}  -> song:{id}, ...
+ * └── folders            -> folder:{caminho}, ...
+ *     └── folder:{path}  -> song:{id}, ...
  * ```
  */
 object MediaIds {
     const val ROOT = "root"
     const val SONGS = "songs"
     const val ALBUMS = "albums"
+    const val ARTISTS = "artists"
+    const val FOLDERS = "folders"
 
     private const val SONG_PREFIX = "song:"
     private const val ALBUM_PREFIX = "album:"
+    private const val ARTIST_PREFIX = "artist:"
+    private const val FOLDER_PREFIX = "folder:"
 
     fun song(id: Long): String = "$SONG_PREFIX$id"
 
     fun album(id: Long): String = "$ALBUM_PREFIX$id"
 
-    fun parseSongId(mediaId: String): Long? = parse(mediaId, SONG_PREFIX)
+    fun artist(name: String): String = "$ARTIST_PREFIX$name"
 
-    fun parseAlbumId(mediaId: String): Long? = parse(mediaId, ALBUM_PREFIX)
+    fun folder(path: String): String = "$FOLDER_PREFIX$path"
 
-    private fun parse(mediaId: String, prefix: String): Long? =
-        if (mediaId.startsWith(prefix)) mediaId.substring(prefix.length).toLongOrNull() else null
+    fun parseSongId(mediaId: String): Long? = suffix(mediaId, SONG_PREFIX)?.toLongOrNull()
+
+    fun parseAlbumId(mediaId: String): Long? = suffix(mediaId, ALBUM_PREFIX)?.toLongOrNull()
+
+    fun parseArtist(mediaId: String): String? = suffix(mediaId, ARTIST_PREFIX)
+
+    fun parseFolder(mediaId: String): String? = suffix(mediaId, FOLDER_PREFIX)
+
+    private fun suffix(mediaId: String, prefix: String): String? =
+        if (mediaId.startsWith(prefix)) mediaId.substring(prefix.length) else null
 }
 
 /** Retorna a página [page] (base 0) de tamanho [pageSize], como pede o MediaLibraryService. */

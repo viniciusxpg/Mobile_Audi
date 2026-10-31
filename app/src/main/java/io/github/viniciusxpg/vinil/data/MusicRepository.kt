@@ -1,6 +1,5 @@
 package io.github.viniciusxpg.vinil.data
 
-import android.content.ContentUris
 import android.content.Context
 import android.os.Build
 import android.provider.MediaStore
@@ -11,9 +10,10 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
 import kotlinx.coroutines.withContext
+import java.io.File
 
 /**
- * Lê as músicas do aparelho pelo MediaStore e mantém um cache em memória.
+ * Lê as músicas do aparelho pelo MediaStore e mantém a biblioteca em cache na memória.
  *
  * É compartilhado entre a interface (ViewModel) e o serviço de reprodução
  * (que usa os mesmos dados para a navegação no Android Auto).
@@ -21,40 +21,33 @@ import kotlinx.coroutines.withContext
 class MusicRepository private constructor(private val context: Context) {
 
     private val mutex = Mutex()
-    private var cache: List<Song>? = null
+    private var cache: Library? = null
 
-    suspend fun getSongs(forceRefresh: Boolean = false): List<Song> = mutex.withLock {
+    suspend fun getLibrary(forceRefresh: Boolean = false): Library = mutex.withLock {
         cache?.takeIf { !forceRefresh }?.let { return@withLock it }
-        // Sem permissão não há o que ler, e não guardamos a lista vazia no cache
+        // Sem permissão não há o que ler, e não guardamos a biblioteca vazia no cache
         // para que a leitura aconteça assim que a permissão for concedida.
-        if (!PermissionUtils.hasAudioPermission(context)) return@withLock emptyList()
-        val songs = withContext(Dispatchers.IO) { querySongs() }
-        cache = songs
-        songs
+        if (!PermissionUtils.hasAudioPermission(context)) return@withLock Library.EMPTY
+        val library = withContext(Dispatchers.IO) { Library.from(querySongs()) }
+        cache = library
+        library
     }
 
-    suspend fun getAlbums(): List<Album> =
-        getSongs()
-            .groupBy { it.albumId }
-            .map { (albumId, songs) ->
-                Album(
-                    id = albumId,
-                    title = songs.first().album,
-                    artist = songs.first().artist,
-                    songs = songs,
-                )
-            }
-            .sortedBy { it.title.lowercase() }
-
-    suspend fun getAlbum(albumId: Long): Album? = getAlbums().firstOrNull { it.id == albumId }
-
-    suspend fun getSong(songId: Long): Song? = getSongs().firstOrNull { it.id == songId }
+    suspend fun getSongs(): List<Song> = getLibrary().songs
 
     private fun querySongs(): List<Song> {
-        val collection = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
+        val usesRelativePath = Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q
+        val collection = if (usesRelativePath) {
             MediaStore.Audio.Media.getContentUri(MediaStore.VOLUME_EXTERNAL)
         } else {
             MediaStore.Audio.Media.EXTERNAL_CONTENT_URI
+        }
+        // Android 10+ expõe a pasta relativa; versões anteriores só têm o caminho completo.
+        @Suppress("DEPRECATION")
+        val folderColumn = if (usesRelativePath) {
+            MediaStore.Audio.Media.RELATIVE_PATH
+        } else {
+            MediaStore.Audio.Media.DATA
         }
         val projection = arrayOf(
             MediaStore.Audio.Media._ID,
@@ -63,6 +56,8 @@ class MusicRepository private constructor(private val context: Context) {
             MediaStore.Audio.Media.ALBUM,
             MediaStore.Audio.Media.ALBUM_ID,
             MediaStore.Audio.Media.DURATION,
+            MediaStore.Audio.Media.TRACK,
+            folderColumn,
         )
         val selection = "${MediaStore.Audio.Media.IS_MUSIC} != 0"
         val sortOrder = "${MediaStore.Audio.Media.TITLE} COLLATE NOCASE ASC"
@@ -80,9 +75,12 @@ class MusicRepository private constructor(private val context: Context) {
                     val albumCol = cursor.getColumnIndexOrThrow(MediaStore.Audio.Media.ALBUM)
                     val albumIdCol = cursor.getColumnIndexOrThrow(MediaStore.Audio.Media.ALBUM_ID)
                     val durationCol = cursor.getColumnIndexOrThrow(MediaStore.Audio.Media.DURATION)
+                    val trackCol = cursor.getColumnIndexOrThrow(MediaStore.Audio.Media.TRACK)
+                    val folderCol = cursor.getColumnIndexOrThrow(folderColumn)
 
                     while (cursor.moveToNext()) {
                         val id = cursor.getLong(idCol)
+                        val rawFolder = cursor.getString(folderCol).orEmpty()
                         songs += Song(
                             id = id,
                             title = cursor.getString(titleCol).orIfBlank { "#$id" },
@@ -90,10 +88,12 @@ class MusicRepository private constructor(private val context: Context) {
                             album = cursor.getString(albumCol).cleanTag(unknownAlbum),
                             albumId = cursor.getLong(albumIdCol),
                             durationMs = cursor.getLong(durationCol),
-                            uri = ContentUris.withAppendedId(
-                                MediaStore.Audio.Media.EXTERNAL_CONTENT_URI,
-                                id,
-                            ),
+                            track = cursor.getInt(trackCol),
+                            folder = if (usesRelativePath) {
+                                rawFolder
+                            } else {
+                                File(rawFolder).parent.orEmpty()
+                            },
                         )
                     }
                 }
