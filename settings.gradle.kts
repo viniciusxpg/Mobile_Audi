@@ -20,5 +20,5 @@ dependencyResolutionManagement {
     }
 }
 
-rootProject.name = "MobileAudi"
+rootProject.name = "Vinil"
 include(":app")

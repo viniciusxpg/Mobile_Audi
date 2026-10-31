@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
-    <string name="app_name">Mobile Audi</string>
+    <string name="app_name">Vinil</string>
 
     <string name="library_all_songs">Todas as músicas</string>
     <string name="library_albums">Álbuns</string>
@@ -13,7 +13,7 @@
     <string name="empty_library_message">Copie arquivos de áudio para o aparelho e toque em atualizar.</string>
 
     <string name="permission_title">Acesso às suas músicas</string>
-    <string name="permission_message">Para listar e tocar as músicas salvas no aparelho, o Mobile Audi precisa de permissão para ler seus arquivos de áudio.</string>
+    <string name="permission_message">Para listar e tocar as músicas salvas no aparelho, o Vinil precisa de permissão para ler seus arquivos de áudio.</string>
     <string name="permission_grant">Permitir acesso</string>
     <string name="permission_open_settings">Abrir configurações</string>
 

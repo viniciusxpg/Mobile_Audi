@@ -1,20 +1,15 @@
 <?xml version="1.0" encoding="utf-8"?>
-<!-- Ícone para Android 7.x (sem suporte a ícones adaptativos). -->
-<vector xmlns:android="http://schemas.android.com/apk/res/android"
-    android:width="48dp"
-    android:height="48dp"
-    android:viewportWidth="24"
-    android:viewportHeight="24">
-    <path
-        android:fillColor="@color/ic_launcher_background"
-        android:pathData="M12,12m-12,0a12,12 0,1 1,24 0a12,12 0,1 1,-24 0" />
-    <group
-        android:scaleX="0.6"
-        android:scaleY="0.6"
-        android:translateX="4.8"
-        android:translateY="4.8">
-        <path
-            android:fillColor="#FFFFFF"
-            android:pathData="M12,3v10.55c-0.59,-0.34 -1.27,-0.55 -2,-0.55 -2.21,0 -4,1.79 -4,4s1.79,4 4,4 4,-1.79 4,-4V7h4V3h-6z" />
-    </group>
-</vector>
+<!-- Ícone para Android 7.x (sem suporte a ícones adaptativos): círculo laranja com o disco. -->
+<layer-list xmlns:android="http://schemas.android.com/apk/res/android">
+    <item>
+        <shape android:shape="oval">
+            <solid android:color="@color/ic_launcher_background" />
+        </shape>
+    </item>
+    <item
+        android:bottom="-6dp"
+        android:left="-6dp"
+        android:right="-6dp"
+        android:top="-6dp"
+        android:drawable="@drawable/ic_launcher_foreground" />
+</layer-list>

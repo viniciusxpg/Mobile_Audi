@@ -24,7 +24,7 @@ jobs:
       - name: Publicar APK
         uses: actions/upload-artifact@v4
         with:
-          name: mobile-audi-debug-apk
+          name: vinil-debug-apk
           path: app/build/outputs/apk/debug/*.apk
 
       - name: Publicar relatório do lint

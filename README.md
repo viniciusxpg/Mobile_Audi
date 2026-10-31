@@ -1,4 +1,6 @@
-# Mobile Audi
+# Vinil
+
+![Ícone do Vinil](docs/icone-vinil.png)
 
 Tocador de música para Android, nativo, em **Kotlin + Jetpack Compose + Media3 (ExoPlayer)**.
 
@@ -9,7 +11,7 @@ Tocador de música para Android, nativo, em **Kotlin + Jetpack Compose + Media3 
 - Mini player na parte de baixo da biblioteca
 - **Reprodução em segundo plano** com notificação, controles na tela de bloqueio e botões de fones Bluetooth
 - Pausa automaticamente em ligações (foco de áudio) e ao desconectar o fone
-- Busca por voz ("Ok Google, tocar ... no Mobile Audi"), inclusive no Android Auto
+- Busca por voz ("Ok Google, tocar ... no Vinil"), inclusive no Android Auto
 - **Android Auto**: navegação por "Todas as músicas" e "Álbuns" direto na central do carro
 - Material You (cores do papel de parede) no Android 12+, tema claro e escuro
 
@@ -42,7 +44,7 @@ o Android Auto só o exibe com "Fontes desconhecidas" habilitado.
 ## Estrutura
 
 ```
-app/src/main/java/com/mobileaudi/player/
+app/src/main/java/io/github/viniciusxpg/vinil/
 ├── MainActivity.kt              # ponto de entrada (Compose)
 ├── data/
 │   ├── Song.kt                  # modelos Song e Album
@@ -52,7 +54,7 @@ app/src/main/java/com/mobileaudi/player/
 │   ├── MediaIds.kt              # IDs da árvore de navegação (root / songs / albums)
 │   └── MediaItems.kt            # conversão Song/Album -> MediaItem
 ├── ui/
-│   ├── MobileAudiApp.kt         # permissões e navegação entre telas
+│   ├── VinilApp.kt         # permissões e navegação entre telas
 │   ├── PlayerViewModel.kt       # MVVM: MediaController -> StateFlow
 │   ├── components/              # AlbumArt, MiniPlayer
 │   ├── screens/                 # Library, NowPlaying, Permission

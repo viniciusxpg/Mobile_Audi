@@ -7,11 +7,11 @@ plugins {
 }
 
 android {
-    namespace = "com.mobileaudi.player"
+    namespace = "io.github.viniciusxpg.vinil"
     compileSdk = 35
 
     defaultConfig {
-        applicationId = "com.mobileaudi.player"
+        applicationId = "io.github.viniciusxpg.vinil"
         // Android 7.0+: cobre praticamente todos os aparelhos em uso.
         minSdk = 24
         targetSdk = 35
