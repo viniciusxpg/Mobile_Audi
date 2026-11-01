@@ -20,11 +20,11 @@ import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
 import androidx.compose.foundation.lazy.grid.items
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.lazy.itemsIndexed
-import androidx.compose.foundation.pager.HorizontalPager
-import androidx.compose.foundation.pager.rememberPagerState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.filled.QueueMusic
 import androidx.compose.material.icons.filled.Add
+import androidx.compose.material.icons.filled.Album
 import androidx.compose.material.icons.filled.BrightnessAuto
 import androidx.compose.material.icons.filled.Check
 import androidx.compose.material.icons.filled.DarkMode
@@ -32,7 +32,9 @@ import androidx.compose.material.icons.filled.Equalizer
 import androidx.compose.material.icons.filled.Folder
 import androidx.compose.material.icons.filled.LibraryMusic
 import androidx.compose.material.icons.filled.LightMode
+import androidx.compose.material.icons.filled.MusicNote
 import androidx.compose.material.icons.filled.MusicOff
+import androidx.compose.material.icons.filled.Person
 import androidx.compose.material.icons.filled.Refresh
 import androidx.compose.material.icons.filled.Search
 import androidx.compose.material3.CircularProgressIndicator
@@ -43,17 +45,18 @@ import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.ListItem
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.NavigationBar
+import androidx.compose.material3.NavigationBarItem
 import androidx.compose.material3.Scaffold
-import androidx.compose.material3.ScrollableTabRow
-import androidx.compose.material3.Tab
 import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBar
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.saveable.rememberSaveable
+import androidx.compose.runtime.saveable.rememberSaveableStateHolder
 import androidx.compose.runtime.setValue
-import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -61,7 +64,6 @@ import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
-import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import io.github.viniciusxpg.vinil.R
 import io.github.viniciusxpg.vinil.data.Album
@@ -77,21 +79,23 @@ import io.github.viniciusxpg.vinil.ui.components.SongActions
 import io.github.viniciusxpg.vinil.ui.components.SongRow
 import io.github.viniciusxpg.vinil.ui.components.quantityString
 import io.github.viniciusxpg.vinil.ui.theme.ThemeMode
-import kotlinx.coroutines.launch
 
-private enum class LibraryTab(@StringRes val title: Int) {
-    SONGS(R.string.tab_songs),
-    PLAYLISTS(R.string.library_playlists),
-    ALBUMS(R.string.library_albums),
-    ARTISTS(R.string.library_artists),
-    FOLDERS(R.string.library_folders),
+private enum class LibraryTab(@StringRes val title: Int, val icon: ImageVector) {
+    SONGS(R.string.tab_songs, Icons.Filled.MusicNote),
+    PLAYLISTS(R.string.library_playlists, Icons.AutoMirrored.Filled.QueueMusic),
+    ALBUMS(R.string.library_albums, Icons.Filled.Album),
+    ARTISTS(R.string.library_artists, Icons.Filled.Person),
+    FOLDERS(R.string.library_folders, Icons.Filled.Folder),
 }
 
 /**
- * Tela principal com as abas Músicas, Playlists, Álbuns, Artistas e Pastas (troca
- * deslizando para os lados ou tocando na aba).
+ * Tela principal: barra superior com busca, equalizador, tema e atualizar; conteúdo da
+ * seção escolhida; e, embaixo, o mini player acima do menu de navegação com ícones
+ * (Músicas, Playlists, Álbuns, Artistas, Pastas).
  *
- * @param onOpenCollection abre um álbum, artista ou pasta pelo seu mediaId (ver [MediaIds]).
+ * @param onOpenCollection abre um álbum, artista, pasta ou playlist pelo seu mediaId (ver [MediaIds]).
+ * @param miniPlayer mini player desenhado acima do menu inferior (sem o recuo da barra do sistema,
+ *   que fica por conta do menu).
  */
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -109,44 +113,48 @@ fun LibraryScreen(
     onRefresh: () -> Unit,
     miniPlayer: @Composable () -> Unit,
 ) {
-    val tabs = LibraryTab.entries
-    val pagerState = rememberPagerState { tabs.size }
-    val scope = rememberCoroutineScope()
+    var selectedTab by rememberSaveable { mutableStateOf(LibraryTab.SONGS) }
+    // Cada seção guarda a própria rolagem ao trocar de seção no menu.
+    val tabStates = rememberSaveableStateHolder()
     val library = state.library
 
     Scaffold(
         topBar = {
+            TopAppBar(
+                title = { Text(stringResource(R.string.app_name)) },
+                actions = {
+                    IconButton(onClick = onOpenSearch) {
+                        Icon(
+                            Icons.Filled.Search,
+                            contentDescription = stringResource(R.string.action_search),
+                        )
+                    }
+                    IconButton(onClick = onOpenEqualizer) {
+                        Icon(
+                            Icons.Filled.Equalizer,
+                            contentDescription = stringResource(R.string.equalizer),
+                        )
+                    }
+                    ThemeMenu(themeMode, onThemeModeChange)
+                    IconButton(onClick = onRefresh) {
+                        Icon(
+                            Icons.Filled.Refresh,
+                            contentDescription = stringResource(R.string.action_refresh),
+                        )
+                    }
+                },
+            )
+        },
+        bottomBar = {
             Column {
-                TopAppBar(
-                    title = { Text(stringResource(R.string.app_name)) },
-                    actions = {
-                        IconButton(onClick = onOpenSearch) {
-                            Icon(
-                                Icons.Filled.Search,
-                                contentDescription = stringResource(R.string.action_search),
-                            )
-                        }
-                        IconButton(onClick = onOpenEqualizer) {
-                            Icon(
-                                Icons.Filled.Equalizer,
-                                contentDescription = stringResource(R.string.equalizer),
-                            )
-                        }
-                        ThemeMenu(themeMode, onThemeModeChange)
-                        IconButton(onClick = onRefresh) {
-                            Icon(
-                                Icons.Filled.Refresh,
-                                contentDescription = stringResource(R.string.action_refresh),
-                            )
-                        }
-                    },
-                )
-                ScrollableTabRow(selectedTabIndex = pagerState.currentPage, edgePadding = 8.dp) {
-                    tabs.forEachIndexed { index, tab ->
-                        Tab(
-                            selected = pagerState.currentPage == index,
-                            onClick = { scope.launch { pagerState.animateScrollToPage(index) } },
-                            text = {
+                miniPlayer()
+                NavigationBar {
+                    LibraryTab.entries.forEach { tab ->
+                        NavigationBarItem(
+                            selected = tab == selectedTab,
+                            onClick = { selectedTab = tab },
+                            icon = { Icon(tab.icon, contentDescription = null) },
+                            label = {
                                 Text(stringResource(tab.title), maxLines = 1, overflow = TextOverflow.Ellipsis)
                             },
                         )
@@ -154,7 +162,6 @@ fun LibraryScreen(
                 }
             }
         },
-        bottomBar = miniPlayer,
     ) { padding ->
         when {
             state.isLoading && library.songs.isEmpty() -> Box(
@@ -166,16 +173,12 @@ fun LibraryScreen(
 
             library.songs.isEmpty() -> EmptyLibrary(Modifier.padding(padding))
 
-            else -> HorizontalPager(
-                state = pagerState,
-                modifier = Modifier
-                    .fillMaxSize()
-                    .padding(top = padding.calculateTopPadding()),
-            ) { page ->
-                val bottom = padding.calculateBottomPadding()
+            else -> tabStates.SaveableStateProvider(selectedTab.name) {
                 val currentId = state.current?.mediaId
-                when (tabs[page]) {
-                    LibraryTab.SONGS -> LazyColumn(contentPadding = PaddingValues(bottom = bottom)) {
+                // fillMaxSize: a lista começa logo abaixo da barra superior, mesmo com poucos itens.
+                val listModifier = Modifier.fillMaxSize()
+                when (selectedTab) {
+                    LibraryTab.SONGS -> LazyColumn(listModifier, contentPadding = padding) {
                         itemsIndexed(library.songs, key = { _, song -> song.id }) { index, song ->
                             SongRow(
                                 song = song,
@@ -186,7 +189,7 @@ fun LibraryScreen(
                         }
                     }
 
-                    LibraryTab.PLAYLISTS -> LazyColumn(contentPadding = PaddingValues(bottom = bottom)) {
+                    LibraryTab.PLAYLISTS -> LazyColumn(listModifier, contentPadding = padding) {
                         item(key = "new") {
                             IconRow(
                                 icon = Icons.Filled.Add,
@@ -207,17 +210,17 @@ fun LibraryScreen(
 
                     LibraryTab.ALBUMS -> AlbumGrid(
                         albums = library.albums,
-                        bottomPadding = bottom,
+                        padding = padding,
                         onClick = { onOpenCollection(MediaIds.album(it.id)) },
                     )
 
-                    LibraryTab.ARTISTS -> LazyColumn(contentPadding = PaddingValues(bottom = bottom)) {
+                    LibraryTab.ARTISTS -> LazyColumn(listModifier, contentPadding = padding) {
                         items(library.artists, key = { it.name }) { artist ->
                             ArtistRow(artist, onClick = { onOpenCollection(MediaIds.artist(artist.name)) })
                         }
                     }
 
-                    LibraryTab.FOLDERS -> LazyColumn(contentPadding = PaddingValues(bottom = bottom)) {
+                    LibraryTab.FOLDERS -> LazyColumn(listModifier, contentPadding = padding) {
                         items(library.folders, key = { it.path }) { folder ->
                             FolderRow(folder, onClick = { onOpenCollection(MediaIds.folder(folder.path)) })
                         }
@@ -266,10 +269,15 @@ private fun ThemeMenu(mode: ThemeMode, onModeChange: (ThemeMode) -> Unit) {
 }
 
 @Composable
-private fun AlbumGrid(albums: List<Album>, bottomPadding: Dp, onClick: (Album) -> Unit) {
+private fun AlbumGrid(albums: List<Album>, padding: PaddingValues, onClick: (Album) -> Unit) {
     LazyVerticalGrid(
         columns = GridCells.Adaptive(minSize = 150.dp),
-        contentPadding = PaddingValues(start = 12.dp, end = 12.dp, top = 12.dp, bottom = 12.dp + bottomPadding),
+        contentPadding = PaddingValues(
+            start = 12.dp,
+            end = 12.dp,
+            top = padding.calculateTopPadding() + 12.dp,
+            bottom = padding.calculateBottomPadding() + 12.dp,
+        ),
         horizontalArrangement = Arrangement.spacedBy(12.dp),
         verticalArrangement = Arrangement.spacedBy(16.dp),
         modifier = Modifier.fillMaxSize(),

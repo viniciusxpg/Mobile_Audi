@@ -6,7 +6,7 @@ Tocador de música para Android, nativo, em **Kotlin + Jetpack Compose + Media3 
 
 ## Funcionalidades
 
-- Biblioteca em abas: **Músicas, Playlists, Álbuns, Artistas e Pastas** (deslize para trocar de aba)
+- **Menu inferior com ícones**: Músicas, Playlists, Álbuns, Artistas e Pastas, com o mini player logo acima
 - **Playlists**: criar, renomear, excluir, adicionar músicas (menu ⋮ ou um álbum/artista/pasta inteiro) e remover
 - **Busca** por músicas, álbuns, artistas e playlists, sem diferenciar acentos ("acucar" encontra "Açúcar")
 - **Tocar em seguida**: coloca uma música logo depois da atual
@@ -26,7 +26,7 @@ Tocador de música para Android, nativo, em **Kotlin + Jetpack Compose + Media3 
 - Busca por voz ("Ok Google, tocar ... no Vinil"), inclusive no Android Auto
 - **Android Auto**: navegação por músicas, playlists, álbuns, artistas e pastas direto na central do carro
 - Ignora áudios e mensagens de voz do WhatsApp (e WhatsApp Business) e do Telegram
-- **Cores da logo** (laranja, preto vinil e creme) com **modo claro, escuro ou automático**, escolhido no topo da biblioteca
+- **Cores da logo** (laranja, preto vinil e creme) com **modo claro, escuro ou automático**, escolhido no ícone de tema no topo
 
 ## Requisitos
 
@@ -76,7 +76,7 @@ app/src/main/java/io/github/viniciusxpg/vinil/
 │   ├── VinilApp.kt              # permissões e navegação entre telas
 │   ├── PlayerViewModel.kt       # MVVM: MediaController -> StateFlow
 │   ├── components/              # AlbumArt, SpinningVinyl, MiniPlayer, SongRow (menu ⋮), diálogos de playlist
-│   ├── screens/                 # Library (abas), Collection, Search, NowPlaying, Queue, Equalizer, Permission
+│   ├── screens/                 # Library (menu inferior), Collection, Search, NowPlaying, Queue, Equalizer, Permission
 │   └── theme/                   # paletas clara/escura da marca e escolha de tema
 ├── widget/                      # widget da tela inicial
 └── util/                        # permissões, capas, formatação de tempo e de frequência
@@ -97,7 +97,7 @@ com o app fechado e todos os controles ficam sincronizados.
 
 ## Próximos passos
 
-- Atualizar bibliotecas (Android Gradle Plugin 9, Media3 1.11, Compose) e targetSdk 36
+- targetSdk 37 (Android 17), depois de testar as mudanças de comportamento
 - Reordenar músicas das playlists
 - Opção para mostrar áudios do WhatsApp
 - Versão de release assinada para a Play Store

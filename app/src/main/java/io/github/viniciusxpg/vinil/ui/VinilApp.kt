@@ -149,6 +149,16 @@ fun VinilApp(
             onNext = viewModel::next,
         )
     }
+    // Na biblioteca o mini player fica acima do menu inferior, que já cuida da barra do sistema.
+    val miniPlayerAboveMenu: @Composable () -> Unit = {
+        MiniPlayer(
+            state = state,
+            onClick = { showNowPlaying = true },
+            onPlayPause = viewModel::playPause,
+            onNext = viewModel::next,
+            applyNavigationBarPadding = false,
+        )
+    }
 
     when {
         showEqualizer -> {
@@ -263,7 +273,7 @@ fun VinilApp(
                 themeMode = themeMode,
                 onThemeModeChange = onThemeModeChange,
                 onRefresh = { viewModel.loadLibrary(forceRefresh = true) },
-                miniPlayer = miniPlayer,
+                miniPlayer = miniPlayerAboveMenu,
             )
         }
     }

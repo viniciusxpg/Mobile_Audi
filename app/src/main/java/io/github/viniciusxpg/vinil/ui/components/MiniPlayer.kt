@@ -36,10 +36,12 @@ fun MiniPlayer(
     onPlayPause: () -> Unit,
     onNext: () -> Unit,
     modifier: Modifier = Modifier,
+    /** Falso quando há um menu de navegação abaixo, que já reserva o espaço da barra do sistema. */
+    applyNavigationBarPadding: Boolean = true,
 ) {
     val current = state.current ?: return
     Surface(tonalElevation = 3.dp, modifier = modifier.fillMaxWidth()) {
-        Column(Modifier.navigationBarsPadding()) {
+        Column(if (applyNavigationBarPadding) Modifier.navigationBarsPadding() else Modifier) {
             LinearProgressIndicator(
                 progress = { state.progress },
                 modifier = Modifier.fillMaxWidth(),
