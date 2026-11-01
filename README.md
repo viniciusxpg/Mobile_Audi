@@ -25,7 +25,7 @@ Tocador de música para Android, nativo, em **Kotlin + Jetpack Compose + Media3 
 - Pausa automaticamente em ligações (foco de áudio) e ao desconectar o fone
 - Busca por voz ("Ok Google, tocar ... no Vinil"), inclusive no Android Auto
 - **Android Auto**: navegação por músicas, playlists, álbuns, artistas e pastas direto na central do carro
-- Ignora áudios e mensagens de voz do WhatsApp (e WhatsApp Business) e do Telegram
+- Ignora áudios e mensagens de voz do WhatsApp (e WhatsApp Business) e do Telegram, e gravações do rádio FM
 - **Cores da logo** (laranja, preto vinil e creme) com **modo claro, escuro ou automático**, escolhido no ícone de tema no topo
 
 ## Requisitos

@@ -67,18 +67,21 @@ fun groupFolders(songs: List<Song>): List<Folder> =
         .sortedWith(compareBy<Folder>({ it.name.lowercase() }, { it.path }))
 
 /**
- * Pastas de apps de mensagem (áudios e mensagens de voz do WhatsApp, WhatsApp Business
- * e Telegram). O Android costuma marcar esses arquivos como "música", então eles são
- * filtrados aqui. Exemplos de caminho:
+ * Pastas cujos áudios não são músicas e ficam fora da biblioteca:
+ * - áudios e mensagens de voz do WhatsApp, WhatsApp Business e Telegram, que o Android
+ *   costuma marcar como "música";
+ * - gravações do rádio FM do celular (pastas como `fmrecordings` ou `FM Recordings`).
+ *
+ * Exemplos de caminho:
  * - Android 10+: `Android/media/com.whatsapp/WhatsApp/Media/WhatsApp Voice Notes/202544/`
  * - Android 7–9: `/storage/emulated/0/WhatsApp/Media/WhatsApp Audio`
  */
-fun isMessagingAppFolder(path: String): Boolean =
+fun isExcludedFolder(path: String): Boolean =
     path.lowercase().split('/').any { segment ->
-        MESSAGING_APP_MARKERS.any { marker -> segment.contains(marker) }
+        EXCLUDED_FOLDER_MARKERS.any { marker -> segment.contains(marker) }
     }
 
-private val MESSAGING_APP_MARKERS = listOf("whatsapp", "telegram")
+private val EXCLUDED_FOLDER_MARKERS = listOf("whatsapp", "telegram", "fmrecord", "fm record")
 
 /** Remove a barra final: "Music/Rock/" -> "Music/Rock". A raiz continua sendo "/". */
 fun normalizeFolder(path: String): String {

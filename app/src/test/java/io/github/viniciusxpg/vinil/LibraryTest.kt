@@ -3,7 +3,7 @@ package io.github.viniciusxpg.vinil
 import io.github.viniciusxpg.vinil.data.Library
 import io.github.viniciusxpg.vinil.data.Song
 import io.github.viniciusxpg.vinil.data.folderName
-import io.github.viniciusxpg.vinil.data.isMessagingAppFolder
+import io.github.viniciusxpg.vinil.data.isExcludedFolder
 import io.github.viniciusxpg.vinil.data.normalizeFolder
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
@@ -84,14 +84,18 @@ class LibraryTest {
     }
 
     @Test
-    fun detectsMessagingAppFolders() {
-        assertTrue(isMessagingAppFolder("Android/media/com.whatsapp/WhatsApp/Media/WhatsApp Voice Notes/202544/"))
-        assertTrue(isMessagingAppFolder("Android/media/com.whatsapp.w4b/WhatsApp Business/Media/WhatsApp Business Audio/"))
-        assertTrue(isMessagingAppFolder("/storage/emulated/0/WhatsApp/Media/WhatsApp Audio"))
-        assertTrue(isMessagingAppFolder("Telegram/Telegram Audio/"))
-        assertTrue(isMessagingAppFolder("Android/media/org.telegram.messenger/Telegram/Telegram Audio/"))
-        assertFalse(isMessagingAppFolder("Music/Rock/"))
-        assertFalse(isMessagingAppFolder("Download/"))
-        assertFalse(isMessagingAppFolder(""))
+    fun detectsExcludedFolders() {
+        assertTrue(isExcludedFolder("Android/media/com.whatsapp/WhatsApp/Media/WhatsApp Voice Notes/202544/"))
+        assertTrue(isExcludedFolder("Android/media/com.whatsapp.w4b/WhatsApp Business/Media/WhatsApp Business Audio/"))
+        assertTrue(isExcludedFolder("/storage/emulated/0/WhatsApp/Media/WhatsApp Audio"))
+        assertTrue(isExcludedFolder("Telegram/Telegram Audio/"))
+        assertTrue(isExcludedFolder("Android/media/org.telegram.messenger/Telegram/Telegram Audio/"))
+        assertTrue(isExcludedFolder("fmrecordings/"))
+        assertTrue(isExcludedFolder("Music/FM Recordings"))
+        assertTrue(isExcludedFolder("/storage/emulated/0/Recordings/FMRecord"))
+        assertFalse(isExcludedFolder("Music/FM Hits"))
+        assertFalse(isExcludedFolder("Music/Rock/"))
+        assertFalse(isExcludedFolder("Download/"))
+        assertFalse(isExcludedFolder(""))
     }
 }
