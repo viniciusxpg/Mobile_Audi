@@ -2,6 +2,8 @@ package io.github.viniciusxpg.vinil.playback
 
 import android.app.PendingIntent
 import android.content.Intent
+import android.graphics.Bitmap
+import android.os.Build
 import android.media.AudioManager
 import androidx.annotation.OptIn
 import androidx.media3.common.AudioAttributes
@@ -11,6 +13,7 @@ import androidx.media3.common.MediaMetadata
 import androidx.media3.common.Player
 import androidx.media3.common.util.UnstableApi
 import androidx.media3.exoplayer.ExoPlayer
+import androidx.media3.session.DefaultMediaNotificationProvider
 import androidx.media3.session.LibraryResult
 import androidx.media3.session.MediaLibraryService
 import androidx.media3.session.MediaLibraryService.LibraryParams
@@ -31,6 +34,8 @@ import io.github.viniciusxpg.vinil.data.PlaylistRepository
 import io.github.viniciusxpg.vinil.data.matchingSongs
 import io.github.viniciusxpg.vinil.data.Song
 import io.github.viniciusxpg.vinil.data.songContentUri
+import io.github.viniciusxpg.vinil.util.loadArtworkBitmap
+import io.github.viniciusxpg.vinil.widget.PlayerWidget
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
@@ -40,6 +45,7 @@ import kotlinx.coroutines.delay
 import kotlinx.coroutines.guava.future
 import kotlinx.coroutines.isActive
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 
 /**
  * Serviço de reprodução em segundo plano.
@@ -52,6 +58,11 @@ import kotlinx.coroutines.launch
 @OptIn(UnstableApi::class)
 class PlaybackService : MediaLibraryService() {
 
+    private companion object {
+        /** Tamanho da capa enviada ao widget (pequena: o widget tem limite de memória). */
+        const val WIDGET_ART_PX = 192
+    }
+
     private val serviceScope = CoroutineScope(SupervisorJob() + Dispatchers.Main.immediate)
     private lateinit var repository: MusicRepository
     private lateinit var playlistRepository: PlaylistRepository
@@ -59,6 +70,11 @@ class PlaybackService : MediaLibraryService() {
     private lateinit var equalizer: EqualizerController
     private var session: MediaLibrarySession? = null
     private var positionSaverJob: Job? = null
+
+    // Capa já carregada para o widget, para não reler o arquivo a cada play/pausa.
+    private var widgetArtMediaId: String? = null
+    private var widgetArt: Bitmap? = null
+    private var widgetJob: Job? = null
 
     /** Salva a fila, a música atual, a posição e os modos sempre que mudam. */
     private val stateSaver = object : Player.Listener {
@@ -82,6 +98,15 @@ class PlaybackService : MediaLibraryService() {
             }
             if (events.contains(Player.EVENT_IS_PLAYING_CHANGED)) {
                 updatePositionSaver(player)
+            }
+            if (events.containsAny(
+                    Player.EVENT_MEDIA_ITEM_TRANSITION,
+                    Player.EVENT_IS_PLAYING_CHANGED,
+                    Player.EVENT_MEDIA_METADATA_CHANGED,
+                    Player.EVENT_TIMELINE_CHANGED,
+                )
+            ) {
+                updateWidget(player)
             }
         }
     }
@@ -123,6 +148,13 @@ class PlaybackService : MediaLibraryService() {
             .setSessionActivity(openAppIntent)
             .build()
 
+        // Ícone da notificação: a silhueta do disco do Vinil.
+        setMediaNotificationProvider(
+            DefaultMediaNotificationProvider.Builder(this).build().apply {
+                setSmallIcon(R.drawable.ic_stat_vinil)
+            },
+        )
+
         restoreLastSession(player)
         player.addListener(stateSaver)
     }
@@ -141,9 +173,11 @@ class PlaybackService : MediaLibraryService() {
 
     override fun onDestroy() {
         positionSaverJob?.cancel()
+        widgetJob?.cancel()
         equalizer.release()
         session?.run {
             savePosition(player)
+            updateWidget(player, stopped = true)
             player.removeListener(stateSaver)
             player.release()
             release()
@@ -218,6 +252,47 @@ class PlaybackService : MediaLibraryService() {
             }
         }
     }
+
+    // ---------------------------------------------------------------------------------------
+    // Widget da tela inicial
+    // ---------------------------------------------------------------------------------------
+
+    private fun updateWidget(player: Player, stopped: Boolean = false) {
+        if (!PlayerWidget.hasWidgets(this)) return
+        val item = player.currentMediaItem
+        val title = (player.mediaMetadata.title ?: item?.mediaMetadata?.title)?.toString()
+        val artist = (player.mediaMetadata.artist ?: item?.mediaMetadata?.artist)?.toString()
+        val isPlaying = player.isPlaying && !stopped
+        val mediaId = item?.mediaId
+
+        if (mediaId == widgetArtMediaId || stopped) {
+            PlayerWidget.update(this, title, artist, isPlaying, widgetArt.takeIf { mediaId == widgetArtMediaId })
+            return
+        }
+        // Música nova: mostra o texto na hora e carrega a capa em segundo plano.
+        PlayerWidget.update(this, title, artist, isPlaying, null)
+        widgetJob?.cancel()
+        widgetJob = serviceScope.launch {
+            val art = mediaId?.let(MediaIds::parseSongId)?.let { songId ->
+                withContext(Dispatchers.IO) {
+                    loadArtworkBitmap(this@PlaybackService, songContentUri(songId), WIDGET_ART_PX)
+                        ?.let(::softwareBitmap)
+                }
+            }
+            widgetArtMediaId = mediaId
+            widgetArt = art
+            val current = session?.player ?: return@launch
+            PlayerWidget.update(this@PlaybackService, title, artist, current.isPlaying, art)
+        }
+    }
+
+    /** O widget roda em outro processo e não aceita bitmaps de hardware. */
+    private fun softwareBitmap(bitmap: Bitmap): Bitmap =
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O && bitmap.config == Bitmap.Config.HARDWARE) {
+            bitmap.copy(Bitmap.Config.ARGB_8888, false)
+        } else {
+            bitmap
+        }
 
     // ---------------------------------------------------------------------------------------
     // Biblioteca (app, Android Auto e Assistente)

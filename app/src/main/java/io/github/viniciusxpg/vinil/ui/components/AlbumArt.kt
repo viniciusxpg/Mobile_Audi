@@ -1,11 +1,7 @@
 package io.github.viniciusxpg.vinil.ui.components
 
 import android.content.Context
-import android.graphics.BitmapFactory
-import android.media.MediaMetadataRetriever
 import android.net.Uri
-import android.os.Build
-import android.util.Size
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Box
@@ -29,6 +25,7 @@ import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
+import io.github.viniciusxpg.vinil.util.loadArtworkBitmap
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 
@@ -72,18 +69,5 @@ fun AlbumArt(
     }
 }
 
-private fun loadArtwork(context: Context, uri: Uri, sizePx: Int): ImageBitmap? = runCatching {
-    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
-        context.contentResolver.loadThumbnail(uri, Size(sizePx, sizePx), null).asImageBitmap()
-    } else {
-        val retriever = MediaMetadataRetriever()
-        try {
-            retriever.setDataSource(context, uri)
-            retriever.embeddedPicture?.let { bytes ->
-                BitmapFactory.decodeByteArray(bytes, 0, bytes.size)?.asImageBitmap()
-            }
-        } finally {
-            retriever.release()
-        }
-    }
-}.getOrNull()
+private fun loadArtwork(context: Context, uri: Uri, sizePx: Int): ImageBitmap? =
+    loadArtworkBitmap(context, uri, sizePx)?.asImageBitmap()

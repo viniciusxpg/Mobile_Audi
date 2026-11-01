@@ -3,7 +3,6 @@ package io.github.viniciusxpg.vinil.ui.screens
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
-import androidx.compose.foundation.layout.aspectRatio
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
@@ -43,7 +42,7 @@ import androidx.compose.ui.unit.dp
 import androidx.media3.common.Player
 import io.github.viniciusxpg.vinil.R
 import io.github.viniciusxpg.vinil.ui.PlayerUiState
-import io.github.viniciusxpg.vinil.ui.components.AlbumArt
+import io.github.viniciusxpg.vinil.ui.components.SpinningVinyl
 import io.github.viniciusxpg.vinil.util.formatDuration
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -95,14 +94,12 @@ fun NowPlayingScreen(
             horizontalAlignment = Alignment.CenterHorizontally,
             verticalArrangement = Arrangement.SpaceEvenly,
         ) {
-            AlbumArt(
+            SpinningVinyl(
                 contentUri = current.contentUri,
+                isPlaying = state.isPlaying,
                 modifier = Modifier
                     .widthIn(max = 400.dp)
-                    .fillMaxWidth()
-                    .aspectRatio(1f),
-                cornerRadius = 16.dp,
-                sizePx = 1024,
+                    .fillMaxWidth(),
             )
 
             Column(horizontalAlignment = Alignment.CenterHorizontally) {

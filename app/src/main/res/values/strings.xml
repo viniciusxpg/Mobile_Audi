@@ -90,4 +90,7 @@
     <string name="queue_clear">Limpar</string>
     <string name="action_remove_from_queue">Remover da fila</string>
     <string name="action_reorder">Arrastar para reordenar</string>
+
+    <string name="widget_description">Capa da música e controles de reprodução</string>
+    <string name="widget_nothing_playing">Nada tocando</string>
 </resources>

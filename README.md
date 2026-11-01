@@ -16,6 +16,9 @@ Tocador de música para Android, nativo, em **Kotlin + Jetpack Compose + Media3 
 - Tela "Tocando agora" com barra de progresso, aleatório e repetir (desligado / tudo / uma)
 - **Equalizador** com ajustes prontos do aparelho, uma barra por faixa de frequência e reforço de graves (vale só para o Vinil e fica salvo)
 - Mini player na parte de baixo da biblioteca
+- **Disco girando** em "Tocando agora", com a capa do álbum no selo (para ao pausar; respeita "remover animações")
+- **Widget** na tela inicial com capa e botões anterior / tocar-pausar / próxima (funciona com o app fechado)
+- Ícone da notificação com a silhueta do disco
 - **Reprodução em segundo plano** com notificação, controles na tela de bloqueio e botões de fones Bluetooth
 - Pausa automaticamente em ligações (foco de áudio) e ao desconectar o fone
 - Busca por voz ("Ok Google, tocar ... no Vinil"), inclusive no Android Auto
@@ -70,10 +73,11 @@ app/src/main/java/io/github/viniciusxpg/vinil/
 ├── ui/
 │   ├── VinilApp.kt              # permissões e navegação entre telas
 │   ├── PlayerViewModel.kt       # MVVM: MediaController -> StateFlow
-│   ├── components/              # AlbumArt, MiniPlayer, SongRow (menu ⋮), diálogos de playlist
+│   ├── components/              # AlbumArt, SpinningVinyl, MiniPlayer, SongRow (menu ⋮), diálogos de playlist
 │   ├── screens/                 # Library (abas), Collection, Search, NowPlaying, Queue, Equalizer, Permission
 │   └── theme/                   # tema Material 3
-└── util/                        # permissões, formatação de tempo e de frequência
+├── widget/                      # widget da tela inicial
+└── util/                        # permissões, capas, formatação de tempo e de frequência
 ```
 
 ### Arquitetura
