@@ -25,13 +25,19 @@ import androidx.compose.foundation.pager.rememberPagerState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
+import androidx.compose.material.icons.filled.BrightnessAuto
+import androidx.compose.material.icons.filled.Check
+import androidx.compose.material.icons.filled.DarkMode
 import androidx.compose.material.icons.filled.Equalizer
 import androidx.compose.material.icons.filled.Folder
 import androidx.compose.material.icons.filled.LibraryMusic
+import androidx.compose.material.icons.filled.LightMode
 import androidx.compose.material.icons.filled.MusicOff
 import androidx.compose.material.icons.filled.Refresh
 import androidx.compose.material.icons.filled.Search
 import androidx.compose.material3.CircularProgressIndicator
+import androidx.compose.material3.DropdownMenu
+import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
@@ -43,6 +49,10 @@ import androidx.compose.material3.Tab
 import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBar
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -66,6 +76,7 @@ import io.github.viniciusxpg.vinil.ui.components.AlbumArt
 import io.github.viniciusxpg.vinil.ui.components.SongActions
 import io.github.viniciusxpg.vinil.ui.components.SongRow
 import io.github.viniciusxpg.vinil.ui.components.quantityString
+import io.github.viniciusxpg.vinil.ui.theme.ThemeMode
 import kotlinx.coroutines.launch
 
 private enum class LibraryTab(@StringRes val title: Int) {
@@ -93,6 +104,8 @@ fun LibraryScreen(
     onCreatePlaylist: () -> Unit,
     onOpenSearch: () -> Unit,
     onOpenEqualizer: () -> Unit,
+    themeMode: ThemeMode,
+    onThemeModeChange: (ThemeMode) -> Unit,
     onRefresh: () -> Unit,
     miniPlayer: @Composable () -> Unit,
 ) {
@@ -119,6 +132,7 @@ fun LibraryScreen(
                                 contentDescription = stringResource(R.string.equalizer),
                             )
                         }
+                        ThemeMenu(themeMode, onThemeModeChange)
                         IconButton(onClick = onRefresh) {
                             Icon(
                                 Icons.Filled.Refresh,
@@ -209,6 +223,43 @@ fun LibraryScreen(
                         }
                     }
                 }
+            }
+        }
+    }
+}
+
+/** Botão de tema no topo: abre as opções Automático / Claro / Escuro. */
+@Composable
+private fun ThemeMenu(mode: ThemeMode, onModeChange: (ThemeMode) -> Unit) {
+    var expanded by remember { mutableStateOf(false) }
+    Box {
+        IconButton(onClick = { expanded = true }) {
+            Icon(
+                imageVector = when (mode) {
+                    ThemeMode.SYSTEM -> Icons.Filled.BrightnessAuto
+                    ThemeMode.LIGHT -> Icons.Filled.LightMode
+                    ThemeMode.DARK -> Icons.Filled.DarkMode
+                },
+                contentDescription = stringResource(R.string.theme),
+            )
+        }
+        DropdownMenu(expanded = expanded, onDismissRequest = { expanded = false }) {
+            listOf(
+                Triple(ThemeMode.SYSTEM, R.string.theme_system, Icons.Filled.BrightnessAuto),
+                Triple(ThemeMode.LIGHT, R.string.theme_light, Icons.Filled.LightMode),
+                Triple(ThemeMode.DARK, R.string.theme_dark, Icons.Filled.DarkMode),
+            ).forEach { (option, label, icon) ->
+                DropdownMenuItem(
+                    text = { Text(stringResource(label)) },
+                    leadingIcon = { Icon(icon, contentDescription = null) },
+                    trailingIcon = {
+                        if (option == mode) Icon(Icons.Filled.Check, contentDescription = null)
+                    },
+                    onClick = {
+                        expanded = false
+                        onModeChange(option)
+                    },
+                )
             }
         }
     }

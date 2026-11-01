@@ -26,7 +26,7 @@ Tocador de música para Android, nativo, em **Kotlin + Jetpack Compose + Media3 
 - Busca por voz ("Ok Google, tocar ... no Vinil"), inclusive no Android Auto
 - **Android Auto**: navegação por músicas, playlists, álbuns, artistas e pastas direto na central do carro
 - Ignora áudios e mensagens de voz do WhatsApp (e WhatsApp Business) e do Telegram
-- Material You (cores do papel de parede) no Android 12+, tema claro e escuro
+- **Cores da logo** (laranja, preto vinil e creme) com **modo claro, escuro ou automático**, escolhido no topo da biblioteca
 
 ## Requisitos
 
@@ -77,7 +77,7 @@ app/src/main/java/io/github/viniciusxpg/vinil/
 │   ├── PlayerViewModel.kt       # MVVM: MediaController -> StateFlow
 │   ├── components/              # AlbumArt, SpinningVinyl, MiniPlayer, SongRow (menu ⋮), diálogos de playlist
 │   ├── screens/                 # Library (abas), Collection, Search, NowPlaying, Queue, Equalizer, Permission
-│   └── theme/                   # tema Material 3
+│   └── theme/                   # paletas clara/escura da marca e escolha de tema
 ├── widget/                      # widget da tela inicial
 └── util/                        # permissões, capas, formatação de tempo e de frequência
 ```

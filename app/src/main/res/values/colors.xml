@@ -5,6 +5,8 @@
     <color name="vinil_disc">#161616</color>
     <color name="vinil_groove">#3A3A3A</color>
     <color name="vinil_label">#FFF3E0</color>
+    <!-- Fundo da janela ao abrir (igual ao fundo do tema claro) -->
+    <color name="window_background">#FFF8F4</color>
     <!-- Widget -->
     <color name="widget_background">#E6201A18</color>
     <color name="widget_text">#FFFFFFFF</color>

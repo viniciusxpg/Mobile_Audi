@@ -93,4 +93,9 @@
 
     <string name="widget_description">Capa da música e controles de reprodução</string>
     <string name="widget_nothing_playing">Nada tocando</string>
+
+    <string name="theme">Tema</string>
+    <string name="theme_system">Automático (sistema)</string>
+    <string name="theme_light">Claro</string>
+    <string name="theme_dark">Escuro</string>
 </resources>

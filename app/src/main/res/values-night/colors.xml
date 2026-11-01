@@ -1,0 +1,5 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- Fundo da janela ao abrir no modo escuro (igual ao fundo do tema escuro) -->
+    <color name="window_background">#161211</color>
+</resources>

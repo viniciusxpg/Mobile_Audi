@@ -46,13 +46,18 @@ import io.github.viniciusxpg.vinil.ui.screens.NowPlayingScreen
 import io.github.viniciusxpg.vinil.ui.screens.PermissionScreen
 import io.github.viniciusxpg.vinil.ui.screens.QueueScreen
 import io.github.viniciusxpg.vinil.ui.screens.SearchScreen
+import io.github.viniciusxpg.vinil.ui.theme.ThemeMode
 import io.github.viniciusxpg.vinil.util.PermissionUtils
 
 private const val ROUTE_SEARCH = "search"
 private const val ROUTE_LIBRARY = "library"
 
 @Composable
-fun VinilApp(viewModel: PlayerViewModel = viewModel()) {
+fun VinilApp(
+    themeMode: ThemeMode,
+    onThemeModeChange: (ThemeMode) -> Unit,
+    viewModel: PlayerViewModel = viewModel(),
+) {
     val context = LocalContext.current
     val state by viewModel.uiState.collectAsStateWithLifecycle()
     val playlists by viewModel.playlists.collectAsStateWithLifecycle()
@@ -252,6 +257,8 @@ fun VinilApp(viewModel: PlayerViewModel = viewModel()) {
                 onCreatePlaylist = { newPlaylistSongs = emptyList() },
                 onOpenSearch = { push(ROUTE_SEARCH) },
                 onOpenEqualizer = { showEqualizer = true },
+                themeMode = themeMode,
+                onThemeModeChange = onThemeModeChange,
                 onRefresh = { viewModel.loadLibrary(forceRefresh = true) },
                 miniPlayer = miniPlayer,
             )
