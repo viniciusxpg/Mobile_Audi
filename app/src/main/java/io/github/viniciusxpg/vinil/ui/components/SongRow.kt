@@ -25,8 +25,7 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.platform.LocalConfiguration
-import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.platform.LocalResources
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
@@ -147,6 +146,5 @@ private fun SongMenu(song: Song, actions: SongActions) {
 /** Texto no plural correto, ex.: "1 música" / "12 músicas". */
 @Composable
 fun quantityString(@PluralsRes id: Int, count: Int): String {
-    LocalConfiguration.current // recompõe se o idioma mudar
-    return LocalContext.current.resources.getQuantityString(id, count, count)
+    return LocalResources.current.getQuantityString(id, count, count)
 }

@@ -23,6 +23,7 @@ import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.saveable.rememberSaveableStateHolder
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.platform.LocalResources
 import androidx.compose.ui.res.stringResource
 import androidx.lifecycle.compose.LifecycleResumeEffect
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
@@ -59,6 +60,8 @@ fun VinilApp(
     viewModel: PlayerViewModel = viewModel(),
 ) {
     val context = LocalContext.current
+    // Textos lidos assim acompanham mudanças de configuração (ex.: idioma).
+    val resources = LocalResources.current
     val state by viewModel.uiState.collectAsStateWithLifecycle()
     val playlists by viewModel.playlists.collectAsStateWithLifecycle()
     val equalizerState by viewModel.equalizerState.collectAsStateWithLifecycle()
@@ -133,7 +136,7 @@ fun VinilApp(
     val songActions = SongActions(
         onPlayNext = { song ->
             viewModel.playNext(song)
-            context.toast(context.getString(R.string.play_next_done))
+            context.toast(resources.getString(R.string.play_next_done))
         },
         onAddToPlaylist = { songs -> songsToAdd = songs },
     )
@@ -276,9 +279,9 @@ fun VinilApp(
                 viewModel.addToPlaylist(playlist.id, songs) { added ->
                     context.toast(
                         if (added == 0) {
-                            context.getString(R.string.playlist_already_contains, playlist.name)
+                            resources.getString(R.string.playlist_already_contains, playlist.name)
                         } else {
-                            context.resources.getQuantityString(
+                            resources.getQuantityString(
                                 R.plurals.songs_added_to_playlist,
                                 added,
                                 added,
@@ -303,7 +306,7 @@ fun VinilApp(
             onConfirm = { name ->
                 newPlaylistSongs = null
                 viewModel.createPlaylist(name, songs) { playlist ->
-                    context.toast(context.getString(R.string.playlist_created, playlist.name))
+                    context.toast(resources.getString(R.string.playlist_created, playlist.name))
                 }
             },
         )
