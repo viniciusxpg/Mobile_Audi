@@ -7,12 +7,13 @@ plugins {
 
 android {
     namespace = "io.github.viniciusxpg.vinil"
-    compileSdk = 36
+    compileSdk = 37
 
     defaultConfig {
         applicationId = "io.github.viniciusxpg.vinil"
         // Android 7.0+: cobre praticamente todos os aparelhos em uso.
         minSdk = 24
+        // targetSdk 37 (Android 17) só depois de testar as mudanças de comportamento no aparelho.
         targetSdk = 36
         versionCode = 1
         versionName = "0.1.0"
