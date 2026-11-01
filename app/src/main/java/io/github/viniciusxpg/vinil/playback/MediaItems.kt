@@ -2,6 +2,7 @@ package io.github.viniciusxpg.vinil.playback
 
 import android.content.ContentUris
 import android.net.Uri
+import androidx.core.net.toUri
 import androidx.media3.common.MediaItem
 import androidx.media3.common.MediaMetadata
 import io.github.viniciusxpg.vinil.data.Album
@@ -11,7 +12,7 @@ import io.github.viniciusxpg.vinil.data.Playlist
 import io.github.viniciusxpg.vinil.data.Song
 import io.github.viniciusxpg.vinil.data.uri
 
-private val ALBUM_ART_BASE_URI: Uri = Uri.parse("content://media/external/audio/albumart")
+private val ALBUM_ART_BASE_URI: Uri = "content://media/external/audio/albumart".toUri()
 
 fun albumArtUri(albumId: Long): Uri = ContentUris.withAppendedId(ALBUM_ART_BASE_URI, albumId)
 

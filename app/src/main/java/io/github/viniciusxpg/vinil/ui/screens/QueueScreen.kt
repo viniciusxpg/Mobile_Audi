@@ -243,8 +243,8 @@ private fun QueueRow(
     isCurrent: Boolean,
     onClick: () -> Unit,
     onRemove: (() -> Unit)?,
-    dragHandle: Modifier?,
     modifier: Modifier = Modifier,
+    dragHandle: Modifier? = null,
 ) {
     val titleColor = if (isCurrent) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurface
     ListItem(

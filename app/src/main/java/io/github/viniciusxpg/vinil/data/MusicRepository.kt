@@ -1,5 +1,6 @@
 package io.github.viniciusxpg.vinil.data
 
+import android.annotation.SuppressLint
 import android.content.Context
 import android.database.ContentObserver
 import android.net.Uri
@@ -161,6 +162,8 @@ class MusicRepository private constructor(private val context: Context) {
         private const val TAG = "MusicRepository"
         private const val CHANGE_DEBOUNCE_MS = 1_500L
 
+        // Guarda apenas o applicationContext (ver getInstance), que vive tanto quanto o app.
+        @SuppressLint("StaticFieldLeak")
         @Volatile
         private var instance: MusicRepository? = null
 

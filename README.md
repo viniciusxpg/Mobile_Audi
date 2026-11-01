@@ -97,6 +97,7 @@ com o app fechado e todos os controles ficam sincronizados.
 
 ## Próximos passos
 
+- Atualizar bibliotecas (Android Gradle Plugin 9, Media3 1.11, Compose) e targetSdk 36
 - Reordenar músicas das playlists
 - Opção para mostrar áudios do WhatsApp
 - Versão de release assinada para a Play Store

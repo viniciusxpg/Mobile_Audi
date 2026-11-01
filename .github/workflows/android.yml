@@ -26,14 +26,14 @@ jobs:
         run: cat app/build/intermediates/lint_intermediate_text_report/debug/lintReportDebug/lint-results-debug.txt || true
 
       - name: Publicar APK
-        uses: actions/upload-artifact@v5
+        uses: actions/upload-artifact@v6
         with:
           name: vinil-debug-apk
           path: app/build/outputs/apk/debug/*.apk
 
       - name: Publicar relatório do lint
         if: always()
-        uses: actions/upload-artifact@v5
+        uses: actions/upload-artifact@v6
         with:
           name: lint-report
           path: app/build/reports/lint-results-debug.html
