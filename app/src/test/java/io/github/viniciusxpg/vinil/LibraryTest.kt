@@ -1,9 +1,11 @@
 package io.github.viniciusxpg.vinil
 
 import io.github.viniciusxpg.vinil.data.Library
+import io.github.viniciusxpg.vinil.data.LibraryFilter
 import io.github.viniciusxpg.vinil.data.Song
 import io.github.viniciusxpg.vinil.data.folderName
 import io.github.viniciusxpg.vinil.data.isExcludedFolder
+import io.github.viniciusxpg.vinil.data.isFolderVisible
 import io.github.viniciusxpg.vinil.data.normalizeFolder
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
@@ -97,5 +99,21 @@ class LibraryTest {
         assertFalse(isExcludedFolder("Music/Rock/"))
         assertFalse(isExcludedFolder("Download/"))
         assertFalse(isExcludedFolder(""))
+    }
+
+    @Test
+    fun folderVisibilityFollowsUserChoices() {
+        val padrao = LibraryFilter()
+        assertFalse(isFolderVisible("fmrecordings/", padrao))
+        assertTrue(isFolderVisible("Music/Rock/", padrao))
+
+        // Regra de mensagens/rádio desligada: o rádio FM volta a aparecer.
+        assertTrue(isFolderVisible("fmrecordings/", LibraryFilter(hideMessagingAndRadio = false)))
+
+        // Pasta escondida manualmente, com ou sem barra no final.
+        val escondida = LibraryFilter(hiddenFolders = setOf("Recordings"))
+        assertFalse(isFolderVisible("Recordings/", escondida))
+        assertFalse(isFolderVisible("Recordings", escondida))
+        assertTrue(isFolderVisible("Music/", escondida))
     }
 }

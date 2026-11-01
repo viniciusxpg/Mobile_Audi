@@ -11,7 +11,10 @@ import androidx.media3.common.Player
 import androidx.media3.session.MediaController
 import androidx.media3.session.SessionToken
 import com.google.common.util.concurrent.ListenableFuture
+import io.github.viniciusxpg.vinil.data.Folder
 import io.github.viniciusxpg.vinil.data.Library
+import io.github.viniciusxpg.vinil.data.LibraryFilter
+import io.github.viniciusxpg.vinil.data.LibrarySettings
 import io.github.viniciusxpg.vinil.data.MusicRepository
 import io.github.viniciusxpg.vinil.data.Playlist
 import io.github.viniciusxpg.vinil.data.PlaylistRepository
@@ -96,6 +99,26 @@ class PlayerViewModel(application: Application) : AndroidViewModel(application) 
     fun setBassBoost(strength: Int) = equalizer.setBassBoost(strength)
 
     fun resetEqualizer() = equalizer.reset()
+
+    // ---- Pastas ocultas (Configurações) -----------------------------------------------
+
+    private val librarySettings = LibrarySettings.getInstance(application)
+
+    /** Escolhas de pastas ocultas. */
+    val libraryFilter: StateFlow<LibraryFilter> = librarySettings.filter
+
+    private val _allFolders = MutableStateFlow<List<Folder>>(emptyList())
+
+    /** Todas as pastas com áudio do aparelho, inclusive as ocultas. */
+    val allFolders: StateFlow<List<Folder>> = _allFolders.asStateFlow()
+
+    fun loadAllFolders() {
+        viewModelScope.launch { _allFolders.value = repository.getAllFolders() }
+    }
+
+    fun setHideMessagingAndRadio(hide: Boolean) = librarySettings.setHideMessagingAndRadio(hide)
+
+    fun setFolderHidden(path: String, hidden: Boolean) = librarySettings.setFolderHidden(path, hidden)
 
     private val _uiState = MutableStateFlow(PlayerUiState())
     val uiState: StateFlow<PlayerUiState> = _uiState.asStateFlow()

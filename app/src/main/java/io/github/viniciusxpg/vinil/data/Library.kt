@@ -83,6 +83,23 @@ fun isExcludedFolder(path: String): Boolean =
 
 private val EXCLUDED_FOLDER_MARKERS = listOf("whatsapp", "telegram", "fmrecord", "fm record")
 
+/**
+ * Escolhas do usuário sobre o que entra na biblioteca.
+ *
+ * @param hideMessagingAndRadio aplica a regra de [isExcludedFolder] (WhatsApp, Telegram, rádio FM).
+ * @param hiddenFolders pastas escondidas manualmente (caminho normalizado, ver [normalizeFolder]).
+ */
+data class LibraryFilter(
+    val hideMessagingAndRadio: Boolean = true,
+    val hiddenFolders: Set<String> = emptySet(),
+)
+
+/** Verdadeiro se as músicas da pasta [path] devem aparecer na biblioteca. */
+fun isFolderVisible(path: String, filter: LibraryFilter): Boolean {
+    if (filter.hideMessagingAndRadio && isExcludedFolder(path)) return false
+    return normalizeFolder(path) !in filter.hiddenFolders
+}
+
 /** Remove a barra final: "Music/Rock/" -> "Music/Rock". A raiz continua sendo "/". */
 fun normalizeFolder(path: String): String {
     val trimmed = path.trimEnd('/')

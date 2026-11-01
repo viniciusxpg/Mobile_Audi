@@ -47,7 +47,9 @@ import io.github.viniciusxpg.vinil.ui.screens.NowPlayingScreen
 import io.github.viniciusxpg.vinil.ui.screens.PermissionScreen
 import io.github.viniciusxpg.vinil.ui.screens.QueueScreen
 import io.github.viniciusxpg.vinil.ui.screens.SearchScreen
+import io.github.viniciusxpg.vinil.ui.screens.SettingsScreen
 import io.github.viniciusxpg.vinil.ui.theme.ThemeMode
+import io.github.viniciusxpg.vinil.ui.theme.ThemeSettings
 import io.github.viniciusxpg.vinil.util.PermissionUtils
 
 private const val ROUTE_SEARCH = "search"
@@ -57,6 +59,8 @@ private const val ROUTE_LIBRARY = "library"
 fun VinilApp(
     themeMode: ThemeMode,
     onThemeModeChange: (ThemeMode) -> Unit,
+    dynamicColor: Boolean,
+    onDynamicColorChange: (Boolean) -> Unit,
     viewModel: PlayerViewModel = viewModel(),
 ) {
     val context = LocalContext.current
@@ -73,6 +77,10 @@ fun VinilApp(
     var showEqualizer by rememberSaveable { mutableStateOf(false) }
     // A fila abre a partir de "Tocando agora" e volta para ela.
     var showQueue by rememberSaveable { mutableStateOf(false) }
+    // Configurações abrem a partir da biblioteca; o equalizador aberto por elas volta para elas.
+    var showSettings by rememberSaveable { mutableStateOf(false) }
+    val libraryFilter by viewModel.libraryFilter.collectAsStateWithLifecycle()
+    val allFolders by viewModel.allFolders.collectAsStateWithLifecycle()
 
     // Pilha de telas abertas sobre a biblioteca: "search" ou um mediaId
     // de coleção ("album:42", "playlist:3"...). Vazia = biblioteca.
@@ -186,6 +194,26 @@ fun VinilApp(
             )
         }
 
+        showSettings -> {
+            BackHandler { showSettings = false }
+            // Recarrega a lista de pastas ao abrir e sempre que a biblioteca muda.
+            LaunchedEffect(state.library) { viewModel.loadAllFolders() }
+            SettingsScreen(
+                themeMode = themeMode,
+                onThemeModeChange = onThemeModeChange,
+                dynamicColorSupported = ThemeSettings.isDynamicColorSupported,
+                dynamicColor = dynamicColor,
+                onDynamicColorChange = onDynamicColorChange,
+                onOpenEqualizer = { showEqualizer = true },
+                filter = libraryFilter,
+                folders = allFolders,
+                onHideMessagingAndRadioChange = viewModel::setHideMessagingAndRadio,
+                onFolderHiddenChange = viewModel::setFolderHidden,
+                onRefreshLibrary = { viewModel.loadLibrary(forceRefresh = true) },
+                onBack = { showSettings = false },
+            )
+        }
+
         showNowPlaying && state.current != null -> {
             BackHandler { showNowPlaying = false }
             NowPlayingScreen(
@@ -269,10 +297,7 @@ fun VinilApp(
                 onOpenCollection = { push(it) },
                 onCreatePlaylist = { newPlaylistSongs = emptyList() },
                 onOpenSearch = { push(ROUTE_SEARCH) },
-                onOpenEqualizer = { showEqualizer = true },
-                themeMode = themeMode,
-                onThemeModeChange = onThemeModeChange,
-                onRefresh = { viewModel.loadLibrary(forceRefresh = true) },
+                onOpenSettings = { showSettings = true },
                 miniPlayer = miniPlayerAboveMenu,
             )
         }

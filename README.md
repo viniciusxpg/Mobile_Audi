@@ -26,7 +26,8 @@ Tocador de música para Android, nativo, em **Kotlin + Jetpack Compose + Media3 
 - Busca por voz ("Ok Google, tocar ... no Vinil"), inclusive no Android Auto
 - **Android Auto**: navegação por músicas, playlists, álbuns, artistas e pastas direto na central do carro
 - Ignora áudios e mensagens de voz do WhatsApp (e WhatsApp Business) e do Telegram, e gravações do rádio FM
-- **Cores da logo** (laranja, preto vinil e creme) com **modo claro, escuro ou automático**, escolhido no ícone de tema no topo
+- **Cores da logo** (laranja, preto vinil e creme) com **modo claro, escuro ou automático**; opção de usar as cores do papel de parede (Android 12+)
+- **Configurações** (⚙️ no topo): tema, cores, equalizador, atualizar biblioteca e **pastas ocultas** — escolha quais pastas aparecem no app
 
 ## Requisitos
 
@@ -65,6 +66,7 @@ app/src/main/java/io/github/viniciusxpg/vinil/
 │   ├── Search.kt                # busca sem acentos
 │   ├── Playlist.kt              # modelo e JSON das playlists
 │   ├── PlaylistRepository.kt    # playlists salvas em playlists.json
+│   ├── LibrarySettings.kt       # pastas ocultas escolhidas pelo usuário
 │   └── MusicRepository.kt       # leitura do MediaStore + cache
 ├── playback/
 │   ├── PlaybackService.kt       # MediaLibraryService: ExoPlayer, notificação, Android Auto
@@ -76,7 +78,7 @@ app/src/main/java/io/github/viniciusxpg/vinil/
 │   ├── VinilApp.kt              # permissões e navegação entre telas
 │   ├── PlayerViewModel.kt       # MVVM: MediaController -> StateFlow
 │   ├── components/              # AlbumArt, SpinningVinyl, MiniPlayer, SongRow (menu ⋮), diálogos de playlist
-│   ├── screens/                 # Library (menu inferior), Collection, Search, NowPlaying, Queue, Equalizer, Permission
+│   ├── screens/                 # Library (menu inferior), Collection, Search, NowPlaying, Queue, Equalizer, Settings, Permission
 │   └── theme/                   # paletas clara/escura da marca e escolha de tema
 ├── widget/                      # widget da tela inicial
 └── util/                        # permissões, capas, formatação de tempo e de frequência
@@ -99,5 +101,4 @@ com o app fechado e todos os controles ficam sincronizados.
 
 - targetSdk 37 (Android 17), depois de testar as mudanças de comportamento
 - Reordenar músicas das playlists
-- Opção para mostrar áudios do WhatsApp
 - Versão de release assinada para a Play Store

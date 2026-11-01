@@ -21,6 +21,7 @@ class MainActivity : ComponentActivity() {
         val themeSettings = ThemeSettings.getInstance(this)
         setContent {
             val themeMode by themeSettings.mode.collectAsStateWithLifecycle()
+            val dynamicColor by themeSettings.dynamicColor.collectAsStateWithLifecycle()
             val darkTheme = themeMode.isDark(isSystemInDarkTheme())
 
             // Ícones da barra de status e de navegação acompanham o tema escolhido no app,
@@ -33,10 +34,12 @@ class MainActivity : ComponentActivity() {
                 onDispose { }
             }
 
-            VinilTheme(darkTheme = darkTheme) {
+            VinilTheme(darkTheme = darkTheme, dynamicColor = dynamicColor) {
                 VinilApp(
                     themeMode = themeMode,
                     onThemeModeChange = themeSettings::setMode,
+                    dynamicColor = dynamicColor,
+                    onDynamicColorChange = themeSettings::setDynamicColor,
                 )
             }
         }

@@ -25,21 +25,14 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.QueueMusic
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.Album
-import androidx.compose.material.icons.filled.BrightnessAuto
-import androidx.compose.material.icons.filled.Check
-import androidx.compose.material.icons.filled.DarkMode
-import androidx.compose.material.icons.filled.Equalizer
 import androidx.compose.material.icons.filled.Folder
 import androidx.compose.material.icons.filled.LibraryMusic
-import androidx.compose.material.icons.filled.LightMode
 import androidx.compose.material.icons.filled.MusicNote
 import androidx.compose.material.icons.filled.MusicOff
 import androidx.compose.material.icons.filled.Person
-import androidx.compose.material.icons.filled.Refresh
 import androidx.compose.material.icons.filled.Search
+import androidx.compose.material.icons.filled.Settings
 import androidx.compose.material3.CircularProgressIndicator
-import androidx.compose.material3.DropdownMenu
-import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
@@ -53,7 +46,6 @@ import androidx.compose.material3.TopAppBar
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.remember
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.saveable.rememberSaveableStateHolder
 import androidx.compose.runtime.setValue
@@ -78,7 +70,6 @@ import io.github.viniciusxpg.vinil.ui.components.AlbumArt
 import io.github.viniciusxpg.vinil.ui.components.SongActions
 import io.github.viniciusxpg.vinil.ui.components.SongRow
 import io.github.viniciusxpg.vinil.ui.components.quantityString
-import io.github.viniciusxpg.vinil.ui.theme.ThemeMode
 
 private enum class LibraryTab(@StringRes val title: Int, val icon: ImageVector) {
     SONGS(R.string.tab_songs, Icons.Filled.MusicNote),
@@ -89,7 +80,7 @@ private enum class LibraryTab(@StringRes val title: Int, val icon: ImageVector) 
 }
 
 /**
- * Tela principal: barra superior com busca, equalizador, tema e atualizar; conteúdo da
+ * Tela principal: barra superior com busca e configurações; conteúdo da
  * seção escolhida; e, embaixo, o mini player acima do menu de navegação com ícones
  * (Músicas, Playlists, Álbuns, Artistas, Pastas).
  *
@@ -107,10 +98,7 @@ fun LibraryScreen(
     onOpenCollection: (String) -> Unit,
     onCreatePlaylist: () -> Unit,
     onOpenSearch: () -> Unit,
-    onOpenEqualizer: () -> Unit,
-    themeMode: ThemeMode,
-    onThemeModeChange: (ThemeMode) -> Unit,
-    onRefresh: () -> Unit,
+    onOpenSettings: () -> Unit,
     miniPlayer: @Composable () -> Unit,
 ) {
     var selectedTab by rememberSaveable { mutableStateOf(LibraryTab.SONGS) }
@@ -129,17 +117,10 @@ fun LibraryScreen(
                             contentDescription = stringResource(R.string.action_search),
                         )
                     }
-                    IconButton(onClick = onOpenEqualizer) {
+                    IconButton(onClick = onOpenSettings) {
                         Icon(
-                            Icons.Filled.Equalizer,
-                            contentDescription = stringResource(R.string.equalizer),
-                        )
-                    }
-                    ThemeMenu(themeMode, onThemeModeChange)
-                    IconButton(onClick = onRefresh) {
-                        Icon(
-                            Icons.Filled.Refresh,
-                            contentDescription = stringResource(R.string.action_refresh),
+                            Icons.Filled.Settings,
+                            contentDescription = stringResource(R.string.settings),
                         )
                     }
                 },
@@ -226,43 +207,6 @@ fun LibraryScreen(
                         }
                     }
                 }
-            }
-        }
-    }
-}
-
-/** Botão de tema no topo: abre as opções Automático / Claro / Escuro. */
-@Composable
-private fun ThemeMenu(mode: ThemeMode, onModeChange: (ThemeMode) -> Unit) {
-    var expanded by remember { mutableStateOf(false) }
-    Box {
-        IconButton(onClick = { expanded = true }) {
-            Icon(
-                imageVector = when (mode) {
-                    ThemeMode.SYSTEM -> Icons.Filled.BrightnessAuto
-                    ThemeMode.LIGHT -> Icons.Filled.LightMode
-                    ThemeMode.DARK -> Icons.Filled.DarkMode
-                },
-                contentDescription = stringResource(R.string.theme),
-            )
-        }
-        DropdownMenu(expanded = expanded, onDismissRequest = { expanded = false }) {
-            listOf(
-                Triple(ThemeMode.SYSTEM, R.string.theme_system, Icons.Filled.BrightnessAuto),
-                Triple(ThemeMode.LIGHT, R.string.theme_light, Icons.Filled.LightMode),
-                Triple(ThemeMode.DARK, R.string.theme_dark, Icons.Filled.DarkMode),
-            ).forEach { (option, label, icon) ->
-                DropdownMenuItem(
-                    text = { Text(stringResource(label)) },
-                    leadingIcon = { Icon(icon, contentDescription = null) },
-                    trailingIcon = {
-                        if (option == mode) Icon(Icons.Filled.Check, contentDescription = null)
-                    },
-                    onClick = {
-                        expanded = false
-                        onModeChange(option)
-                    },
-                )
             }
         }
     }

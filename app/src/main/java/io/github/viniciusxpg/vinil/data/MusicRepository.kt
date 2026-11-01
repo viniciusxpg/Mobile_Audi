@@ -20,6 +20,7 @@ import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.drop
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
@@ -33,12 +34,17 @@ import java.io.File
  * (que usa os mesmos dados para a navegação no Android Auto).
  *
  * Observa o MediaStore: quando arquivos de áudio são adicionados, apagados ou
- * alterados, o cache é descartado e [changes] avisa quem precisa recarregar.
+ * alterados, o cache é descartado e [changes] avisa quem precisa recarregar. O mesmo
+ * acontece quando o usuário muda as pastas ocultas ([LibrarySettings]).
  */
 class MusicRepository private constructor(private val context: Context) {
 
     private val mutex = Mutex()
     @Volatile private var cache: Library? = null
+
+    /** Todas as faixas do MediaStore, antes do filtro de pastas (para a tela de configurações). */
+    @Volatile private var allSongs: List<Song>? = null
+    private val librarySettings = LibrarySettings.getInstance(context)
 
     private val scope = CoroutineScope(SupervisorJob() + Dispatchers.Default)
     private var debounceJob: Job? = null
@@ -54,6 +60,7 @@ class MusicRepository private constructor(private val context: Context) {
             debounceJob = scope.launch {
                 delay(CHANGE_DEBOUNCE_MS)
                 cache = null
+                allSongs = null
                 ArtworkCache.clear()
                 _changes.value += 1
             }
@@ -66,6 +73,13 @@ class MusicRepository private constructor(private val context: Context) {
             /* notifyForDescendants = */ true,
             observer,
         )
+        // Pastas ocultas mudaram: refiltra sem reler o aparelho.
+        scope.launch {
+            librarySettings.filter.drop(1).collect {
+                cache = null
+                _changes.value += 1
+            }
+        }
     }
 
     suspend fun getLibrary(forceRefresh: Boolean = false): Library = mutex.withLock {
@@ -73,14 +87,29 @@ class MusicRepository private constructor(private val context: Context) {
         // Sem permissão não há o que ler, e não guardamos a biblioteca vazia no cache
         // para que a leitura aconteça assim que a permissão for concedida.
         if (!PermissionUtils.hasAudioPermission(context)) return@withLock Library.EMPTY
-        val library = withContext(Dispatchers.IO) {
-            Library.from(querySongs().filterNot { isExcludedFolder(it.folder) })
+        val songs = loadAllSongs(forceRefresh)
+        val filter = librarySettings.filter.value
+        val library = withContext(Dispatchers.Default) {
+            Library.from(songs.filter { isFolderVisible(it.folder, filter) })
         }
         cache = library
         library
     }
 
     suspend fun getSongs(): List<Song> = getLibrary().songs
+
+    /** Todas as pastas com áudio do aparelho, inclusive as ocultas (para escolher o que mostrar). */
+    suspend fun getAllFolders(): List<Folder> = mutex.withLock {
+        if (!PermissionUtils.hasAudioPermission(context)) return@withLock emptyList()
+        groupFolders(loadAllSongs(forceRefresh = false))
+    }
+
+    private suspend fun loadAllSongs(forceRefresh: Boolean): List<Song> {
+        allSongs?.takeIf { !forceRefresh }?.let { return it }
+        val songs = withContext(Dispatchers.IO) { querySongs() }
+        allSongs = songs
+        return songs
+    }
 
     private fun querySongs(): List<Song> {
         val usesRelativePath = Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q

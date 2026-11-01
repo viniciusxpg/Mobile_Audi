@@ -98,4 +98,17 @@
     <string name="theme_system">Automático (sistema)</string>
     <string name="theme_light">Claro</string>
     <string name="theme_dark">Escuro</string>
+
+    <string name="settings">Configurações</string>
+    <string name="settings_appearance">Aparência</string>
+    <string name="settings_dynamic_color">Cores do papel de parede</string>
+    <string name="settings_dynamic_color_summary">Usar as cores do seu papel de parede no lugar das cores do Vinil</string>
+    <string name="settings_sound">Som</string>
+    <string name="settings_library">Biblioteca</string>
+    <string name="settings_hide_messaging">Ocultar áudios de mensagens e rádio FM</string>
+    <string name="settings_hide_messaging_summary">WhatsApp, Telegram e gravações do rádio FM</string>
+    <string name="settings_refresh_summary">Normalmente é automático; use se algo não aparecer</string>
+    <string name="settings_folders">Pastas</string>
+    <string name="settings_folders_summary">Desligue uma pasta para esconder as músicas dela de todas as telas.</string>
+    <string name="settings_folder_hidden_by_rule">Oculta pela opção de mensagens e rádio FM</string>
 </resources>
