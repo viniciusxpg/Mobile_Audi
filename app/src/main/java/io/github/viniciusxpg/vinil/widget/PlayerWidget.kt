@@ -9,7 +9,9 @@ import android.content.Intent
 import android.graphics.Bitmap
 import android.view.KeyEvent
 import android.widget.RemoteViews
+import androidx.annotation.OptIn
 import androidx.core.content.edit
+import androidx.media3.common.util.UnstableApi
 import androidx.media3.session.MediaButtonReceiver
 import io.github.viniciusxpg.vinil.MainActivity
 import io.github.viniciusxpg.vinil.R
@@ -96,6 +98,7 @@ object PlayerWidget {
         )
     }
 
+    @OptIn(UnstableApi::class)
     private fun mediaButton(context: Context, keyCode: Int): PendingIntent {
         val intent = Intent(Intent.ACTION_MEDIA_BUTTON)
             .setComponent(ComponentName(context, MediaButtonReceiver::class.java))
