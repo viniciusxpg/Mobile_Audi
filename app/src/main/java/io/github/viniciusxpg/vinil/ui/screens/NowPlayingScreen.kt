@@ -1,13 +1,18 @@
 package io.github.viniciusxpg.vinil.ui.screens
 
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.widthIn
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.QueueMusic
 import androidx.compose.material.icons.filled.Equalizer
@@ -60,8 +65,6 @@ fun NowPlayingScreen(
     onOpenQueue: () -> Unit,
 ) {
     val current = state.current ?: return
-    // Posição enquanto o usuário arrasta a barra; só faz o seek ao soltar.
-    var dragPositionMs by remember { mutableStateOf<Float?>(null) }
 
     Scaffold(
         topBar = {
@@ -86,110 +89,161 @@ fun NowPlayingScreen(
             )
         },
     ) { padding ->
-        Column(
-            modifier = Modifier
+        val controls: @Composable () -> Unit = {
+            PlaybackControls(state, onPlayPause, onNext, onPrevious, onToggleShuffle, onCycleRepeat)
+        }
+        BoxWithConstraints(
+            Modifier
                 .fillMaxSize()
                 .padding(padding)
                 .padding(horizontal = 24.dp, vertical = 16.dp),
-            horizontalAlignment = Alignment.CenterHorizontally,
-            verticalArrangement = Arrangement.SpaceEvenly,
         ) {
-            SpinningVinyl(
-                contentUri = current.contentUri,
-                isPlaying = state.isPlaying,
-                modifier = Modifier
-                    .widthIn(max = 400.dp)
-                    .fillMaxWidth(),
+            if (maxWidth > maxHeight) {
+                // Celular deitado: disco à esquerda, informações e controles à direita.
+                Row(Modifier.fillMaxSize(), verticalAlignment = Alignment.CenterVertically) {
+                    Box(Modifier.weight(1f).fillMaxHeight(), contentAlignment = Alignment.Center) {
+                        // Sem "fill": o disco escolhe o maior quadrado que cabe.
+                        SpinningVinyl(current.contentUri, state.isPlaying)
+                    }
+                    Column(
+                        modifier = Modifier
+                            .weight(1f)
+                            .padding(start = 24.dp)
+                            .verticalScroll(rememberScrollState()),
+                        horizontalAlignment = Alignment.CenterHorizontally,
+                        verticalArrangement = Arrangement.spacedBy(16.dp),
+                    ) {
+                        TrackInfo(current.title, current.artist)
+                        SeekBar(state, onSeek)
+                        controls()
+                    }
+                }
+            } else {
+                Column(
+                    modifier = Modifier.fillMaxSize(),
+                    horizontalAlignment = Alignment.CenterHorizontally,
+                    verticalArrangement = Arrangement.SpaceEvenly,
+                ) {
+                    // O disco encolhe em telas baixas para os controles nunca ficarem cortados.
+                    SpinningVinyl(
+                        contentUri = current.contentUri,
+                        isPlaying = state.isPlaying,
+                        modifier = Modifier
+                            .weight(1f, fill = false)
+                            .widthIn(max = 400.dp),
+                    )
+                    TrackInfo(current.title, current.artist)
+                    SeekBar(state, onSeek)
+                    controls()
+                }
+            }
+        }
+    }
+}
+
+@Composable
+private fun TrackInfo(title: String, artist: String) {
+    Column(horizontalAlignment = Alignment.CenterHorizontally) {
+        Text(
+            text = title,
+            style = MaterialTheme.typography.headlineSmall,
+            textAlign = TextAlign.Center,
+            maxLines = 2,
+            overflow = TextOverflow.Ellipsis,
+        )
+        Text(
+            text = artist,
+            style = MaterialTheme.typography.bodyLarge,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
+            textAlign = TextAlign.Center,
+            maxLines = 1,
+            overflow = TextOverflow.Ellipsis,
+        )
+    }
+}
+
+@Composable
+private fun SeekBar(state: PlayerUiState, onSeek: (Long) -> Unit) {
+    // Posição enquanto o usuário arrasta a barra; só faz o seek ao soltar.
+    var dragPositionMs by remember { mutableStateOf<Float?>(null) }
+    Column(Modifier.fillMaxWidth()) {
+        val durationMs = state.durationMs.coerceAtLeast(0L)
+        val maxValue = durationMs.coerceAtLeast(1L).toFloat()
+        val sliderValue = (dragPositionMs ?: state.positionMs.toFloat()).coerceIn(0f, maxValue)
+        Slider(
+            value = sliderValue,
+            onValueChange = { dragPositionMs = it },
+            onValueChangeFinished = {
+                dragPositionMs?.let { onSeek(it.toLong()) }
+                dragPositionMs = null
+            },
+            valueRange = 0f..maxValue,
+            enabled = durationMs > 0,
+        )
+        Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
+            Text(formatDuration(sliderValue.toLong()), style = MaterialTheme.typography.labelMedium)
+            Text(formatDuration(durationMs), style = MaterialTheme.typography.labelMedium)
+        }
+    }
+}
+
+@Composable
+private fun PlaybackControls(
+    state: PlayerUiState,
+    onPlayPause: () -> Unit,
+    onNext: () -> Unit,
+    onPrevious: () -> Unit,
+    onToggleShuffle: () -> Unit,
+    onCycleRepeat: () -> Unit,
+) {
+    Row(
+        modifier = Modifier.fillMaxWidth(),
+        horizontalArrangement = Arrangement.SpaceEvenly,
+        verticalAlignment = Alignment.CenterVertically,
+    ) {
+        val activeTint = MaterialTheme.colorScheme.primary
+        val inactiveTint = MaterialTheme.colorScheme.onSurfaceVariant
+
+        IconButton(onClick = onToggleShuffle) {
+            Icon(
+                Icons.Filled.Shuffle,
+                contentDescription = stringResource(R.string.action_shuffle),
+                tint = if (state.shuffle) activeTint else inactiveTint,
             )
-
-            Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                Text(
-                    text = current.title,
-                    style = MaterialTheme.typography.headlineSmall,
-                    textAlign = TextAlign.Center,
-                    maxLines = 2,
-                    overflow = TextOverflow.Ellipsis,
-                )
-                Text(
-                    text = current.artist,
-                    style = MaterialTheme.typography.bodyLarge,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant,
-                    textAlign = TextAlign.Center,
-                    maxLines = 1,
-                    overflow = TextOverflow.Ellipsis,
-                )
-            }
-
-            Column(Modifier.fillMaxWidth()) {
-                val durationMs = state.durationMs.coerceAtLeast(0L)
-                val maxValue = durationMs.coerceAtLeast(1L).toFloat()
-                val sliderValue = (dragPositionMs ?: state.positionMs.toFloat()).coerceIn(0f, maxValue)
-                Slider(
-                    value = sliderValue,
-                    onValueChange = { dragPositionMs = it },
-                    onValueChangeFinished = {
-                        dragPositionMs?.let { onSeek(it.toLong()) }
-                        dragPositionMs = null
-                    },
-                    valueRange = 0f..maxValue,
-                    enabled = durationMs > 0,
-                )
-                Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
-                    Text(formatDuration(sliderValue.toLong()), style = MaterialTheme.typography.labelMedium)
-                    Text(formatDuration(durationMs), style = MaterialTheme.typography.labelMedium)
-                }
-            }
-
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.SpaceEvenly,
-                verticalAlignment = Alignment.CenterVertically,
-            ) {
-                val activeTint = MaterialTheme.colorScheme.primary
-                val inactiveTint = MaterialTheme.colorScheme.onSurfaceVariant
-
-                IconButton(onClick = onToggleShuffle) {
-                    Icon(
-                        Icons.Filled.Shuffle,
-                        contentDescription = stringResource(R.string.action_shuffle),
-                        tint = if (state.shuffle) activeTint else inactiveTint,
-                    )
-                }
-                IconButton(onClick = onPrevious, modifier = Modifier.size(56.dp)) {
-                    Icon(
-                        Icons.Filled.SkipPrevious,
-                        contentDescription = stringResource(R.string.action_previous),
-                        modifier = Modifier.size(36.dp),
-                    )
-                }
-                FilledIconButton(onClick = onPlayPause, modifier = Modifier.size(72.dp)) {
-                    Icon(
-                        imageVector = if (state.isPlaying) Icons.Filled.Pause else Icons.Filled.PlayArrow,
-                        contentDescription = stringResource(
-                            if (state.isPlaying) R.string.action_pause else R.string.action_play,
-                        ),
-                        modifier = Modifier.size(40.dp),
-                    )
-                }
-                IconButton(onClick = onNext, modifier = Modifier.size(56.dp)) {
-                    Icon(
-                        Icons.Filled.SkipNext,
-                        contentDescription = stringResource(R.string.action_next),
-                        modifier = Modifier.size(36.dp),
-                    )
-                }
-                IconButton(onClick = onCycleRepeat) {
-                    Icon(
-                        imageVector = if (state.repeatMode == Player.REPEAT_MODE_ONE) {
-                            Icons.Filled.RepeatOne
-                        } else {
-                            Icons.Filled.Repeat
-                        },
-                        contentDescription = stringResource(R.string.action_repeat),
-                        tint = if (state.repeatMode == Player.REPEAT_MODE_OFF) inactiveTint else activeTint,
-                    )
-                }
-            }
+        }
+        IconButton(onClick = onPrevious, modifier = Modifier.size(56.dp)) {
+            Icon(
+                Icons.Filled.SkipPrevious,
+                contentDescription = stringResource(R.string.action_previous),
+                modifier = Modifier.size(36.dp),
+            )
+        }
+        FilledIconButton(onClick = onPlayPause, modifier = Modifier.size(72.dp)) {
+            Icon(
+                imageVector = if (state.isPlaying) Icons.Filled.Pause else Icons.Filled.PlayArrow,
+                contentDescription = stringResource(
+                    if (state.isPlaying) R.string.action_pause else R.string.action_play,
+                ),
+                modifier = Modifier.size(40.dp),
+            )
+        }
+        IconButton(onClick = onNext, modifier = Modifier.size(56.dp)) {
+            Icon(
+                Icons.Filled.SkipNext,
+                contentDescription = stringResource(R.string.action_next),
+                modifier = Modifier.size(36.dp),
+            )
+        }
+        IconButton(onClick = onCycleRepeat) {
+            Icon(
+                imageVector = if (state.repeatMode == Player.REPEAT_MODE_ONE) {
+                    Icons.Filled.RepeatOne
+                } else {
+                    Icons.Filled.Repeat
+                },
+                contentDescription = stringResource(R.string.action_repeat),
+                tint = if (state.repeatMode == Player.REPEAT_MODE_OFF) inactiveTint else activeTint,
+            )
         }
     }
 }

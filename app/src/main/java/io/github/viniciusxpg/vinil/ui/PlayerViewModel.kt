@@ -27,6 +27,7 @@ import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.drop
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.isActive
 import kotlinx.coroutines.launch
@@ -124,6 +125,10 @@ class PlayerViewModel(application: Application) : AndroidViewModel(application) 
     init {
         connectToService()
         viewModelScope.launch { playlistRepository.load() }
+        // Arquivos de áudio novos ou apagados: recarrega a biblioteca sem mostrar "carregando".
+        viewModelScope.launch {
+            repository.changes.drop(1).collect { refreshLibrarySilently() }
+        }
     }
 
     private fun connectToService() {
@@ -149,6 +154,12 @@ class PlayerViewModel(application: Application) : AndroidViewModel(application) 
             val library = repository.getLibrary(forceRefresh)
             _uiState.update { it.copy(library = library, isLoading = false) }
         }
+    }
+
+    private suspend fun refreshLibrarySilently() {
+        if (_uiState.value.isLoading) return
+        val library = repository.getLibrary()
+        _uiState.update { it.copy(library = library) }
     }
 
     /** Toca [songs] (uma aba, álbum, artista ou pasta) começando pela faixa [index]. */

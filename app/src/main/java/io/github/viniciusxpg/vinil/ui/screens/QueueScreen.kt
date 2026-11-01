@@ -2,6 +2,7 @@ package io.github.viniciusxpg.vinil.ui.screens
 
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.gestures.detectDragGestures
+import androidx.compose.foundation.gestures.scrollBy
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
@@ -9,6 +10,7 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.Close
@@ -24,6 +26,8 @@ import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.material3.TopAppBar
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.withFrameNanos
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableFloatStateOf
 import androidx.compose.runtime.mutableIntStateOf
@@ -47,10 +51,12 @@ import io.github.viniciusxpg.vinil.ui.QueueEntry
 import io.github.viniciusxpg.vinil.ui.QueueState
 import io.github.viniciusxpg.vinil.ui.components.AlbumArt
 import io.github.viniciusxpg.vinil.ui.components.quantityString
+import kotlinx.coroutines.isActive
 
 /**
  * Fila de reprodução: música atual e as próximas. Tocar numa música pula para ela;
- * o X remove; com o aleatório desligado, a alça ≡ arrasta para reordenar.
+ * o X remove; com o aleatório desligado, a alça ≡ arrasta para reordenar (a lista rola
+ * sozinha quando a música arrastada chega perto da borda).
  */
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -104,6 +110,46 @@ fun QueueScreen(
         var dragOffset by remember { mutableFloatStateOf(0f) }
         val defaultRowHeight = with(LocalDensity.current) { 72.dp.toPx() }
         var rowHeight by remember { mutableFloatStateOf(defaultRowHeight) }
+        val autoScrollStep = with(LocalDensity.current) { 10.dp.toPx() }
+        val listState = rememberLazyListState()
+
+        /** Troca a música arrastada de lugar quando ela passa da metade da vizinha. */
+        fun swapIfNeeded(key: Int) {
+            val position = items.indexOfFirst { it.index == key }
+            if (dragOffset > rowHeight / 2 && position in 0 until items.lastIndex) {
+                items = items.swap(position, position + 1)
+                dragOffset -= rowHeight
+            } else if (dragOffset < -rowHeight / 2 && position > 0) {
+                items = items.swap(position, position - 1)
+                dragOffset += rowHeight
+            }
+        }
+
+        // Rolagem automática enquanto a música arrastada estiver perto da borda da lista.
+        LaunchedEffect(draggingKey) {
+            val key = draggingKey ?: return@LaunchedEffect
+            while (isActive && draggingKey == key) {
+                val layout = listState.layoutInfo
+                val dragged = layout.visibleItemsInfo.firstOrNull { it.key == key }
+                val step = if (dragged == null) {
+                    0f
+                } else {
+                    val top = dragged.offset + dragOffset
+                    val bottom = top + dragged.size
+                    when {
+                        bottom > layout.viewportEndOffset - rowHeight -> autoScrollStep
+                        top < layout.viewportStartOffset + rowHeight -> -autoScrollStep
+                        else -> 0f
+                    }
+                }
+                if (step != 0f) {
+                    // A lista andou: compensa no deslocamento para a música continuar sob o dedo.
+                    dragOffset += listState.scrollBy(step)
+                    swapIfNeeded(key)
+                }
+                withFrameNanos { }
+            }
+        }
 
         fun finishDrag() {
             val key = draggingKey ?: return
@@ -117,7 +163,7 @@ fun QueueScreen(
             dragOffset = 0f
         }
 
-        LazyColumn(contentPadding = padding) {
+        LazyColumn(state = listState, contentPadding = padding) {
             item(key = "now-header") { SectionHeader(stringResource(R.string.now_playing)) }
             item(key = "now") {
                 QueueRow(entry = current, isCurrent = true, onClick = {}, onRemove = null, dragHandle = null)
@@ -165,14 +211,7 @@ fun QueueScreen(
                             onDrag = { change, amount ->
                                 change.consume()
                                 dragOffset += amount.y
-                                val position = items.indexOfFirst { it.index == entry.index }
-                                if (dragOffset > rowHeight / 2 && position in 0 until items.lastIndex) {
-                                    items = items.swap(position, position + 1)
-                                    dragOffset -= rowHeight
-                                } else if (dragOffset < -rowHeight / 2 && position > 0) {
-                                    items = items.swap(position, position - 1)
-                                    dragOffset += rowHeight
-                                }
+                                swapIfNeeded(entry.index)
                             },
                         )
                     }

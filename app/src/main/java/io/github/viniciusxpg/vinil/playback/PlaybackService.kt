@@ -34,7 +34,7 @@ import io.github.viniciusxpg.vinil.data.PlaylistRepository
 import io.github.viniciusxpg.vinil.data.matchingSongs
 import io.github.viniciusxpg.vinil.data.Song
 import io.github.viniciusxpg.vinil.data.songContentUri
-import io.github.viniciusxpg.vinil.util.loadArtworkBitmap
+import io.github.viniciusxpg.vinil.util.ArtworkCache
 import io.github.viniciusxpg.vinil.widget.PlayerWidget
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
@@ -275,7 +275,7 @@ class PlaybackService : MediaLibraryService() {
         widgetJob = serviceScope.launch {
             val art = mediaId?.let(MediaIds::parseSongId)?.let { songId ->
                 withContext(Dispatchers.IO) {
-                    loadArtworkBitmap(this@PlaybackService, songContentUri(songId), WIDGET_ART_PX)
+                    ArtworkCache.load(this@PlaybackService, songContentUri(songId), WIDGET_ART_PX)
                         ?.let(::softwareBitmap)
                 }
             }

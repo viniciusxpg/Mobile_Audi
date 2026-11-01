@@ -13,9 +13,11 @@ Tocador de música para Android, nativo, em **Kotlin + Jetpack Compose + Media3 
 - **Fila de reprodução**: veja o que vem a seguir (na ordem real, inclusive no aleatório), pule para uma música, remova, limpe ou arraste para reordenar
 - Telas de álbum, artista e pasta com botões **Tocar** e **Aleatório**; álbuns em ordem de faixa
 - **Retoma de onde parou**: ao reabrir o app (ou apertar play no fone com o app fechado) volta à última música, na mesma posição, com a mesma fila
-- Tela "Tocando agora" com barra de progresso, aleatório e repetir (desligado / tudo / uma)
+- Tela "Tocando agora" (também com o celular deitado) com barra de progresso, aleatório e repetir (desligado / tudo / uma)
 - **Equalizador** com ajustes prontos do aparelho, uma barra por faixa de frequência e reforço de graves (vale só para o Vinil e fica salvo)
 - Mini player na parte de baixo da biblioteca
+- **Biblioteca sempre atualizada**: músicas copiadas ou apagadas aparecem/somem sozinhas, sem tocar em atualizar
+- Capas em cache na memória para rolagem leve em bibliotecas grandes
 - **Disco girando** em "Tocando agora", com a capa do álbum no selo (para ao pausar; respeita "remover animações")
 - **Widget** na tela inicial com capa e botões anterior / tocar-pausar / próxima (funciona com o app fechado)
 - Ícone da notificação com a silhueta do disco

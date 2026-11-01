@@ -1,12 +1,25 @@
 package io.github.viniciusxpg.vinil.data
 
 import android.content.Context
+import android.database.ContentObserver
+import android.net.Uri
 import android.os.Build
+import android.os.Handler
+import android.os.Looper
 import android.provider.MediaStore
 import android.util.Log
 import io.github.viniciusxpg.vinil.R
+import io.github.viniciusxpg.vinil.util.ArtworkCache
 import io.github.viniciusxpg.vinil.util.PermissionUtils
+import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.Job
+import kotlinx.coroutines.SupervisorJob
+import kotlinx.coroutines.delay
+import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.launch
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
 import kotlinx.coroutines.withContext
@@ -17,11 +30,42 @@ import java.io.File
  *
  * É compartilhado entre a interface (ViewModel) e o serviço de reprodução
  * (que usa os mesmos dados para a navegação no Android Auto).
+ *
+ * Observa o MediaStore: quando arquivos de áudio são adicionados, apagados ou
+ * alterados, o cache é descartado e [changes] avisa quem precisa recarregar.
  */
 class MusicRepository private constructor(private val context: Context) {
 
     private val mutex = Mutex()
-    private var cache: Library? = null
+    @Volatile private var cache: Library? = null
+
+    private val scope = CoroutineScope(SupervisorJob() + Dispatchers.Default)
+    private var debounceJob: Job? = null
+    private val _changes = MutableStateFlow(0)
+
+    /** Incrementa a cada mudança nos arquivos de áudio do aparelho. */
+    val changes: StateFlow<Int> = _changes.asStateFlow()
+
+    private val observer = object : ContentObserver(Handler(Looper.getMainLooper())) {
+        override fun onChange(selfChange: Boolean, uri: Uri?) {
+            // Uma cópia de vários arquivos gera dezenas de avisos; espera a poeira baixar.
+            debounceJob?.cancel()
+            debounceJob = scope.launch {
+                delay(CHANGE_DEBOUNCE_MS)
+                cache = null
+                ArtworkCache.clear()
+                _changes.value += 1
+            }
+        }
+    }
+
+    init {
+        context.contentResolver.registerContentObserver(
+            MediaStore.Audio.Media.EXTERNAL_CONTENT_URI,
+            /* notifyForDescendants = */ true,
+            observer,
+        )
+    }
 
     suspend fun getLibrary(forceRefresh: Boolean = false): Library = mutex.withLock {
         cache?.takeIf { !forceRefresh }?.let { return@withLock it }
@@ -115,6 +159,7 @@ class MusicRepository private constructor(private val context: Context) {
 
     companion object {
         private const val TAG = "MusicRepository"
+        private const val CHANGE_DEBOUNCE_MS = 1_500L
 
         @Volatile
         private var instance: MusicRepository? = null
