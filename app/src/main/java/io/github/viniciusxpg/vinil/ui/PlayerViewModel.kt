@@ -15,6 +15,8 @@ import io.github.viniciusxpg.vinil.data.Folder
 import io.github.viniciusxpg.vinil.data.Library
 import io.github.viniciusxpg.vinil.data.LibraryFilter
 import io.github.viniciusxpg.vinil.data.LibrarySettings
+import io.github.viniciusxpg.vinil.data.LibrarySort
+import io.github.viniciusxpg.vinil.data.SortSettings
 import io.github.viniciusxpg.vinil.data.MusicRepository
 import io.github.viniciusxpg.vinil.data.Playlist
 import io.github.viniciusxpg.vinil.data.PlaylistRepository
@@ -24,6 +26,9 @@ import io.github.viniciusxpg.vinil.playback.EqualizerController
 import io.github.viniciusxpg.vinil.playback.EqualizerState
 import io.github.viniciusxpg.vinil.playback.MediaIds
 import io.github.viniciusxpg.vinil.playback.PlaybackService
+import io.github.viniciusxpg.vinil.playback.PlaybackSettings
+import io.github.viniciusxpg.vinil.playback.SleepTimer
+import io.github.viniciusxpg.vinil.playback.SleepTimerState
 import io.github.viniciusxpg.vinil.playback.toMediaItem
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.delay
@@ -119,6 +124,36 @@ class PlayerViewModel(application: Application) : AndroidViewModel(application) 
     fun setHideMessagingAndRadio(hide: Boolean) = librarySettings.setHideMessagingAndRadio(hide)
 
     fun setFolderHidden(path: String, hidden: Boolean) = librarySettings.setFolderHidden(path, hidden)
+
+    // ---- Ordenação das listas ---------------------------------------------------------
+
+    private val sortSettings = SortSettings.getInstance(application)
+
+    val librarySort: StateFlow<LibrarySort> = sortSettings.sort
+
+    fun setLibrarySort(sort: LibrarySort) = sortSettings.update(sort)
+
+    // ---- Timer de desligamento e transição suave --------------------------------------
+
+    val sleepTimer: StateFlow<SleepTimerState> = SleepTimer.state
+
+    fun startSleepTimer(minutes: Int) = SleepTimer.startMinutes(minutes)
+
+    fun startSleepTimerEndOfTrack() = SleepTimer.startEndOfTrack()
+
+    fun cancelSleepTimer() = SleepTimer.cancel()
+
+    private val playbackSettings = PlaybackSettings.getInstance(application)
+
+    /** Segundos da transição suave entre músicas (0 = desligada). */
+    val fadeSeconds: StateFlow<Int> = playbackSettings.fadeSeconds
+
+    fun setFadeSeconds(seconds: Int) = playbackSettings.setFadeSeconds(seconds)
+
+    /** Salva a nova ordem das músicas de uma playlist (ids na ordem mostrada). */
+    fun reorderPlaylist(playlistId: Long, songIds: List<Long>) {
+        viewModelScope.launch { playlistRepository.reorder(playlistId, songIds) }
+    }
 
     private val _uiState = MutableStateFlow(PlayerUiState())
     val uiState: StateFlow<PlayerUiState> = _uiState.asStateFlow()

@@ -7,7 +7,10 @@ Tocador de música para Android, nativo, em **Kotlin + Jetpack Compose + Media3 
 ## Funcionalidades
 
 - **Menu inferior com ícones**: Músicas, Playlists, Álbuns, Artistas e Pastas, com o mini player logo acima
-- **Playlists**: criar, renomear, excluir, adicionar músicas (menu ⋮ ou um álbum/artista/pasta inteiro) e remover
+- **Playlists**: criar, renomear, excluir, adicionar músicas (menu ⋮ ou um álbum/artista/pasta inteiro), remover e **arrastar para reordenar**
+- **Ordenar listas**: músicas por título, artista, álbum, data de adição ou duração; álbuns e artistas por nome ou número de músicas; com ordem inversa
+- **Timer de desligamento**: 15 a 90 minutos ou no fim da música atual, com contagem regressiva em "Tocando agora"
+- **Transição suave** (Configurações): a música termina diminuindo o volume e a próxima começa aumentando, de 1 a 10 s
 - **Busca** por músicas, álbuns, artistas e playlists, sem diferenciar acentos ("acucar" encontra "Açúcar")
 - **Tocar em seguida**: coloca uma música logo depois da atual
 - **Fila de reprodução**: veja o que vem a seguir (na ordem real, inclusive no aleatório), pule para uma música, remova, limpe ou arraste para reordenar
@@ -67,11 +70,14 @@ app/src/main/java/io/github/viniciusxpg/vinil/
 │   ├── Playlist.kt              # modelo e JSON das playlists
 │   ├── PlaylistRepository.kt    # playlists salvas em playlists.json
 │   ├── LibrarySettings.kt       # pastas ocultas escolhidas pelo usuário
+│   ├── Sorting.kt               # ordenação das listas (ordem alfabética em português)
 │   └── MusicRepository.kt       # leitura do MediaStore + cache
 ├── playback/
 │   ├── PlaybackService.kt       # MediaLibraryService: ExoPlayer, notificação, Android Auto
 │   ├── PlaybackStateStore.kt    # salva fila/posição para retomar de onde parou
 │   ├── EqualizerController.kt   # equalizador e reforço de graves na sessão de áudio do player
+│   ├── SleepTimer.kt            # timer de desligamento
+│   ├── TransitionFader.kt       # transição suave entre músicas
 │   ├── MediaIds.kt              # IDs da árvore de navegação (songs / albums / artists / folders)
 │   └── MediaItems.kt            # conversão Song/Album -> MediaItem
 ├── ui/
@@ -100,5 +106,4 @@ com o app fechado e todos os controles ficam sincronizados.
 ## Próximos passos
 
 - targetSdk 37 (Android 17), depois de testar as mudanças de comportamento
-- Reordenar músicas das playlists
 - Versão de release assinada para a Play Store

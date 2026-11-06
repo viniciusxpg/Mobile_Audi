@@ -2,6 +2,7 @@ package io.github.viniciusxpg.vinil.ui.screens
 
 import androidx.annotation.StringRes
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.LazyListScope
@@ -14,6 +15,7 @@ import androidx.compose.material.icons.filled.BrightnessAuto
 import androidx.compose.material.icons.filled.DarkMode
 import androidx.compose.material.icons.filled.Equalizer
 import androidx.compose.material.icons.filled.Folder
+import androidx.compose.material.icons.filled.GraphicEq
 import androidx.compose.material.icons.filled.FolderOff
 import androidx.compose.material.icons.filled.LightMode
 import androidx.compose.material.icons.filled.Palette
@@ -27,6 +29,7 @@ import androidx.compose.material3.ListItem
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.RadioButton
 import androidx.compose.material3.Scaffold
+import androidx.compose.material3.Slider
 import androidx.compose.material3.Switch
 import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBar
@@ -42,8 +45,10 @@ import io.github.viniciusxpg.vinil.data.Folder
 import io.github.viniciusxpg.vinil.data.LibraryFilter
 import io.github.viniciusxpg.vinil.data.isExcludedFolder
 import io.github.viniciusxpg.vinil.data.normalizeFolder
+import io.github.viniciusxpg.vinil.playback.PlaybackSettings
 import io.github.viniciusxpg.vinil.ui.components.quantityString
 import io.github.viniciusxpg.vinil.ui.theme.ThemeMode
+import kotlin.math.roundToInt
 
 /**
  * Configurações: aparência (tema e cores), som (equalizador) e biblioteca
@@ -58,6 +63,8 @@ fun SettingsScreen(
     dynamicColor: Boolean,
     onDynamicColorChange: (Boolean) -> Unit,
     onOpenEqualizer: () -> Unit,
+    fadeSeconds: Int,
+    onFadeSecondsChange: (Int) -> Unit,
     filter: LibraryFilter,
     folders: List<Folder>,
     onHideMessagingAndRadioChange: (Boolean) -> Unit,
@@ -122,6 +129,30 @@ fun SettingsScreen(
                     headlineContent = { Text(stringResource(R.string.equalizer)) },
                     trailingContent = {
                         Icon(Icons.AutoMirrored.Filled.KeyboardArrowRight, contentDescription = null)
+                    },
+                )
+            }
+
+            item(key = "fade") {
+                ListItem(
+                    leadingContent = { Icon(Icons.Filled.GraphicEq, contentDescription = null) },
+                    headlineContent = { Text(stringResource(R.string.settings_fade)) },
+                    supportingContent = {
+                        Column {
+                            Text(
+                                if (fadeSeconds == 0) {
+                                    stringResource(R.string.settings_fade_off)
+                                } else {
+                                    quantityString(R.plurals.seconds, fadeSeconds)
+                                },
+                            )
+                            Slider(
+                                value = fadeSeconds.toFloat(),
+                                onValueChange = { onFadeSecondsChange(it.roundToInt()) },
+                                valueRange = 0f..PlaybackSettings.MAX_FADE_SECONDS.toFloat(),
+                                steps = PlaybackSettings.MAX_FADE_SECONDS - 1,
+                            )
+                        }
                     },
                 )
             }

@@ -12,6 +12,8 @@ data class Song(
     val track: Int = 0,
     /** Pasta onde o arquivo está, ex.: "Music/Rock" ou "/storage/emulated/0/Music/Rock". */
     val folder: String = "",
+    /** Quando o arquivo entrou no aparelho, em segundos desde 1970 (0 se desconhecido). */
+    val dateAdded: Long = 0,
 )
 
 /** Álbum montado a partir das faixas que compartilham o mesmo ALBUM_ID, em ordem de faixa. */

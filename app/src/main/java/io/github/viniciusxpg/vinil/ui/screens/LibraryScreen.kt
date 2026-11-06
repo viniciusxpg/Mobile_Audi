@@ -23,6 +23,7 @@ import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.QueueMusic
+import androidx.compose.material.icons.automirrored.filled.Sort
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.Album
 import androidx.compose.material.icons.filled.Folder
@@ -32,7 +33,11 @@ import androidx.compose.material.icons.filled.MusicOff
 import androidx.compose.material.icons.filled.Person
 import androidx.compose.material.icons.filled.Search
 import androidx.compose.material.icons.filled.Settings
+import androidx.compose.material3.Checkbox
 import androidx.compose.material3.CircularProgressIndicator
+import androidx.compose.material3.DropdownMenu
+import androidx.compose.material3.DropdownMenuItem
+import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
@@ -40,12 +45,14 @@ import androidx.compose.material3.ListItem
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.NavigationBar
 import androidx.compose.material3.NavigationBarItem
+import androidx.compose.material3.RadioButton
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBar
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.saveable.rememberSaveableStateHolder
 import androidx.compose.runtime.setValue
@@ -60,7 +67,14 @@ import androidx.compose.ui.unit.dp
 import io.github.viniciusxpg.vinil.R
 import io.github.viniciusxpg.vinil.data.Album
 import io.github.viniciusxpg.vinil.data.Artist
+import io.github.viniciusxpg.vinil.data.AlbumSort
+import io.github.viniciusxpg.vinil.data.ArtistSort
 import io.github.viniciusxpg.vinil.data.Folder
+import io.github.viniciusxpg.vinil.data.LibrarySort
+import io.github.viniciusxpg.vinil.data.SongSort
+import io.github.viniciusxpg.vinil.data.sortAlbums
+import io.github.viniciusxpg.vinil.data.sortArtists
+import io.github.viniciusxpg.vinil.data.sortSongs
 import io.github.viniciusxpg.vinil.data.Playlist
 import io.github.viniciusxpg.vinil.data.Song
 import io.github.viniciusxpg.vinil.data.uri
@@ -99,6 +113,8 @@ fun LibraryScreen(
     onCreatePlaylist: () -> Unit,
     onOpenSearch: () -> Unit,
     onOpenSettings: () -> Unit,
+    sort: LibrarySort,
+    onSortChange: (LibrarySort) -> Unit,
     miniPlayer: @Composable () -> Unit,
 ) {
     var selectedTab by rememberSaveable { mutableStateOf(LibraryTab.SONGS) }
@@ -111,6 +127,9 @@ fun LibraryScreen(
             TopAppBar(
                 title = { Text(stringResource(R.string.app_name)) },
                 actions = {
+                    if (selectedTab in SORTABLE_TABS) {
+                        SortMenu(selectedTab, sort, onSortChange)
+                    }
                     IconButton(onClick = onOpenSearch) {
                         Icon(
                             Icons.Filled.Search,
@@ -156,15 +175,24 @@ fun LibraryScreen(
 
             else -> tabStates.SaveableStateProvider(selectedTab.name) {
                 val currentId = state.current?.mediaId
+                val songs = remember(library.songs, sort.songs, sort.songsDescending) {
+                    sortSongs(library.songs, sort.songs, sort.songsDescending)
+                }
+                val albums = remember(library.albums, sort.albums, sort.albumsDescending) {
+                    sortAlbums(library.albums, sort.albums, sort.albumsDescending)
+                }
+                val artists = remember(library.artists, sort.artists, sort.artistsDescending) {
+                    sortArtists(library.artists, sort.artists, sort.artistsDescending)
+                }
                 // fillMaxSize: a lista começa logo abaixo da barra superior, mesmo com poucos itens.
                 val listModifier = Modifier.fillMaxSize()
                 when (selectedTab) {
                     LibraryTab.SONGS -> LazyColumn(listModifier, contentPadding = padding) {
-                        itemsIndexed(library.songs, key = { _, song -> song.id }) { index, song ->
+                        itemsIndexed(songs, key = { _, song -> song.id }) { index, song ->
                             SongRow(
                                 song = song,
                                 isCurrent = currentId == MediaIds.song(song.id),
-                                onClick = { onPlaySongs(library.songs, index) },
+                                onClick = { onPlaySongs(songs, index) },
                                 actions = songActions,
                             )
                         }
@@ -190,13 +218,13 @@ fun LibraryScreen(
                     }
 
                     LibraryTab.ALBUMS -> AlbumGrid(
-                        albums = library.albums,
+                        albums = albums,
                         padding = padding,
                         onClick = { onOpenCollection(MediaIds.album(it.id)) },
                     )
 
                     LibraryTab.ARTISTS -> LazyColumn(listModifier, contentPadding = padding) {
-                        items(library.artists, key = { it.name }) { artist ->
+                        items(artists, key = { it.name }) { artist ->
                             ArtistRow(artist, onClick = { onOpenCollection(MediaIds.artist(artist.name)) })
                         }
                     }
@@ -208,6 +236,78 @@ fun LibraryScreen(
                     }
                 }
             }
+        }
+    }
+}
+
+private val SORTABLE_TABS = setOf(LibraryTab.SONGS, LibraryTab.ALBUMS, LibraryTab.ARTISTS)
+
+/** Botão de ordenar: critérios da aba atual e "ordem inversa". */
+@Composable
+private fun SortMenu(tab: LibraryTab, sort: LibrarySort, onSortChange: (LibrarySort) -> Unit) {
+    var expanded by remember { mutableStateOf(false) }
+    Box {
+        IconButton(onClick = { expanded = true }) {
+            Icon(Icons.AutoMirrored.Filled.Sort, contentDescription = stringResource(R.string.sort))
+        }
+        DropdownMenu(expanded = expanded, onDismissRequest = { expanded = false }) {
+            @Composable
+            fun option(@StringRes label: Int, selected: Boolean, onClick: () -> Unit) {
+                DropdownMenuItem(
+                    text = { Text(stringResource(label)) },
+                    leadingIcon = { RadioButton(selected = selected, onClick = null) },
+                    onClick = {
+                        expanded = false
+                        onClick()
+                    },
+                )
+            }
+            when (tab) {
+                LibraryTab.SONGS -> {
+                    option(R.string.sort_title, sort.songs == SongSort.TITLE) { onSortChange(sort.copy(songs = SongSort.TITLE)) }
+                    option(R.string.sort_artist, sort.songs == SongSort.ARTIST) { onSortChange(sort.copy(songs = SongSort.ARTIST)) }
+                    option(R.string.sort_album, sort.songs == SongSort.ALBUM) { onSortChange(sort.copy(songs = SongSort.ALBUM)) }
+                    option(R.string.sort_date_added, sort.songs == SongSort.DATE_ADDED) {
+                        // Mais recentes primeiro costuma ser o que se quer ao escolher "data de adição".
+                        onSortChange(sort.copy(songs = SongSort.DATE_ADDED, songsDescending = true))
+                    }
+                    option(R.string.sort_duration, sort.songs == SongSort.DURATION) { onSortChange(sort.copy(songs = SongSort.DURATION)) }
+                }
+                LibraryTab.ALBUMS -> {
+                    option(R.string.sort_title, sort.albums == AlbumSort.TITLE) { onSortChange(sort.copy(albums = AlbumSort.TITLE)) }
+                    option(R.string.sort_artist, sort.albums == AlbumSort.ARTIST) { onSortChange(sort.copy(albums = AlbumSort.ARTIST)) }
+                    option(R.string.sort_song_count, sort.albums == AlbumSort.SONG_COUNT) {
+                        onSortChange(sort.copy(albums = AlbumSort.SONG_COUNT))
+                    }
+                }
+                LibraryTab.ARTISTS -> {
+                    option(R.string.sort_name, sort.artists == ArtistSort.NAME) { onSortChange(sort.copy(artists = ArtistSort.NAME)) }
+                    option(R.string.sort_song_count, sort.artists == ArtistSort.SONG_COUNT) {
+                        onSortChange(sort.copy(artists = ArtistSort.SONG_COUNT))
+                    }
+                }
+                else -> Unit
+            }
+            HorizontalDivider()
+            val descending = when (tab) {
+                LibraryTab.SONGS -> sort.songsDescending
+                LibraryTab.ALBUMS -> sort.albumsDescending
+                else -> sort.artistsDescending
+            }
+            DropdownMenuItem(
+                text = { Text(stringResource(R.string.sort_descending)) },
+                leadingIcon = { Checkbox(checked = descending, onCheckedChange = null) },
+                onClick = {
+                    expanded = false
+                    onSortChange(
+                        when (tab) {
+                            LibraryTab.SONGS -> sort.copy(songsDescending = !descending)
+                            LibraryTab.ALBUMS -> sort.copy(albumsDescending = !descending)
+                            else -> sort.copy(artistsDescending = !descending)
+                        },
+                    )
+                },
+            )
         }
     }
 }

@@ -133,6 +133,7 @@ class MusicRepository private constructor(private val context: Context) {
             MediaStore.Audio.Media.ALBUM_ID,
             MediaStore.Audio.Media.DURATION,
             MediaStore.Audio.Media.TRACK,
+            MediaStore.Audio.Media.DATE_ADDED,
             folderColumn,
         )
         val selection = "${MediaStore.Audio.Media.IS_MUSIC} != 0"
@@ -152,6 +153,7 @@ class MusicRepository private constructor(private val context: Context) {
                     val albumIdCol = cursor.getColumnIndexOrThrow(MediaStore.Audio.Media.ALBUM_ID)
                     val durationCol = cursor.getColumnIndexOrThrow(MediaStore.Audio.Media.DURATION)
                     val trackCol = cursor.getColumnIndexOrThrow(MediaStore.Audio.Media.TRACK)
+                    val dateAddedCol = cursor.getColumnIndexOrThrow(MediaStore.Audio.Media.DATE_ADDED)
                     val folderCol = cursor.getColumnIndexOrThrow(folderColumn)
 
                     while (cursor.moveToNext()) {
@@ -165,6 +167,7 @@ class MusicRepository private constructor(private val context: Context) {
                             albumId = cursor.getLong(albumIdCol),
                             durationMs = cursor.getLong(durationCol),
                             track = cursor.getInt(trackCol),
+                            dateAdded = cursor.getLong(dateAddedCol),
                             folder = if (usesRelativePath) {
                                 rawFolder
                             } else {

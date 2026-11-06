@@ -4,10 +4,12 @@ import androidx.annotation.PluralsRes
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.PlaylistAdd
 import androidx.compose.material.icons.filled.Delete
+import androidx.compose.material.icons.filled.DragHandle
 import androidx.compose.material.icons.filled.MoreVert
 import androidx.compose.material.icons.filled.SkipNext
 import androidx.compose.material3.DropdownMenu
@@ -47,6 +49,7 @@ class SongActions(
  *
  * @param showArtwork capa à esquerda; quando falso (dentro de um álbum) mostra o número da faixa.
  * @param actions ações do menu ⋮; sem ações, o menu não aparece.
+ * @param dragHandle quando presente, mostra a alça ≡ para arrastar (reordenar playlist).
  */
 @Composable
 fun SongRow(
@@ -57,6 +60,7 @@ fun SongRow(
     showArtwork: Boolean = true,
     position: Int = 0,
     actions: SongActions? = null,
+    dragHandle: Modifier? = null,
 ) {
     val highlight = if (isCurrent) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurface
     ListItem(
@@ -99,6 +103,13 @@ fun SongRow(
             Row(verticalAlignment = Alignment.CenterVertically) {
                 Text(formatDuration(song.durationMs))
                 if (actions != null) SongMenu(song, actions)
+                if (dragHandle != null) {
+                    Icon(
+                        Icons.Filled.DragHandle,
+                        contentDescription = stringResource(R.string.action_reorder),
+                        modifier = dragHandle.padding(8.dp),
+                    )
+                }
             }
         },
         colors = ListItemDefaults.colors(headlineColor = highlight),

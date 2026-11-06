@@ -15,6 +15,7 @@ import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.QueueMusic
+import androidx.compose.material.icons.filled.Bedtime
 import androidx.compose.material.icons.filled.Equalizer
 import androidx.compose.material.icons.filled.KeyboardArrowDown
 import androidx.compose.material.icons.filled.Pause
@@ -28,6 +29,7 @@ import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.FilledIconButton
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
+import androidx.compose.material3.LocalContentColor
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Slider
@@ -35,6 +37,7 @@ import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBar
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.produceState
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
@@ -46,7 +49,10 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.media3.common.Player
 import io.github.viniciusxpg.vinil.R
+import io.github.viniciusxpg.vinil.playback.SleepTimerState
 import io.github.viniciusxpg.vinil.ui.PlayerUiState
+import io.github.viniciusxpg.vinil.ui.components.SleepTimerDialog
+import kotlinx.coroutines.delay
 import io.github.viniciusxpg.vinil.ui.components.SpinningVinyl
 import io.github.viniciusxpg.vinil.util.formatDuration
 
@@ -63,13 +69,39 @@ fun NowPlayingScreen(
     onCycleRepeat: () -> Unit,
     onOpenEqualizer: () -> Unit,
     onOpenQueue: () -> Unit,
+    sleepTimer: SleepTimerState,
+    onStartSleepTimer: (minutes: Int) -> Unit,
+    onSleepAtEndOfTrack: () -> Unit,
+    onCancelSleepTimer: () -> Unit,
 ) {
     val current = state.current ?: return
+    var showTimerDialog by remember { mutableStateOf(false) }
+    // Tempo restante do timer, atualizado a cada segundo enquanto ele estiver ativo.
+    val timerRemainingMs by produceState(sleepTimer.remainingMs(), sleepTimer) {
+        while (sleepTimer.endsAtElapsedMs != null) {
+            value = sleepTimer.remainingMs()
+            delay(1_000)
+        }
+        value = null
+    }
 
     Scaffold(
         topBar = {
             TopAppBar(
-                title = { Text(stringResource(R.string.now_playing)) },
+                title = {
+                    Column {
+                        Text(stringResource(R.string.now_playing))
+                        if (sleepTimer.isActive) {
+                            Text(
+                                text = timerRemainingMs?.let {
+                                    stringResource(R.string.sleep_timer_remaining, formatDuration(it))
+                                } ?: stringResource(R.string.sleep_timer_end_of_track_active),
+                                style = MaterialTheme.typography.labelMedium,
+                                color = MaterialTheme.colorScheme.primary,
+                            )
+                        }
+                    }
+                },
                 navigationIcon = {
                     IconButton(onClick = onClose) {
                         Icon(
@@ -79,6 +111,17 @@ fun NowPlayingScreen(
                     }
                 },
                 actions = {
+                    IconButton(onClick = { showTimerDialog = true }) {
+                        Icon(
+                            Icons.Filled.Bedtime,
+                            contentDescription = stringResource(R.string.sleep_timer),
+                            tint = if (sleepTimer.isActive) {
+                                MaterialTheme.colorScheme.primary
+                            } else {
+                                LocalContentColor.current
+                            },
+                        )
+                    }
                     IconButton(onClick = onOpenQueue) {
                         Icon(Icons.AutoMirrored.Filled.QueueMusic, contentDescription = stringResource(R.string.queue))
                     }
@@ -138,6 +181,26 @@ fun NowPlayingScreen(
                 }
             }
         }
+    }
+
+    if (showTimerDialog) {
+        SleepTimerDialog(
+            state = sleepTimer,
+            remainingMs = timerRemainingMs,
+            onPickMinutes = { minutes ->
+                showTimerDialog = false
+                onStartSleepTimer(minutes)
+            },
+            onPickEndOfTrack = {
+                showTimerDialog = false
+                onSleepAtEndOfTrack()
+            },
+            onCancelTimer = {
+                showTimerDialog = false
+                onCancelSleepTimer()
+            },
+            onDismiss = { showTimerDialog = false },
+        )
     }
 }
 

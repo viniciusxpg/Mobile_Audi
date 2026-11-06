@@ -111,4 +111,33 @@
     <string name="settings_folders">Pastas</string>
     <string name="settings_folders_summary">Desligue uma pasta para esconder as músicas dela de todas as telas.</string>
     <string name="settings_folder_hidden_by_rule">Oculta pela opção de mensagens e rádio FM</string>
+
+    <string name="sleep_timer">Timer de desligamento</string>
+    <string name="sleep_timer_remaining">Desliga em %1$s</string>
+    <string name="sleep_timer_end_of_track">No fim da música atual</string>
+    <string name="sleep_timer_end_of_track_active">Desliga no fim desta música</string>
+    <string name="sleep_timer_cancel">Desligar timer</string>
+    <plurals name="minutes">
+        <item quantity="one">%1$d minuto</item>
+        <item quantity="many">%1$d minutos</item>
+        <item quantity="other">%1$d minutos</item>
+    </plurals>
+
+    <string name="sort">Ordenar</string>
+    <string name="sort_title">Título</string>
+    <string name="sort_name">Nome</string>
+    <string name="sort_artist">Artista</string>
+    <string name="sort_album">Álbum</string>
+    <string name="sort_date_added">Data de adição</string>
+    <string name="sort_duration">Duração</string>
+    <string name="sort_song_count">Número de músicas</string>
+    <string name="sort_descending">Ordem inversa</string>
+
+    <string name="settings_fade">Transição suave</string>
+    <string name="settings_fade_off">Desligada: uma música emenda direto na outra</string>
+    <plurals name="seconds">
+        <item quantity="one">%1$d segundo diminuindo e aumentando o volume</item>
+        <item quantity="many">%1$d segundos diminuindo e aumentando o volume</item>
+        <item quantity="other">%1$d segundos diminuindo e aumentando o volume</item>
+    </plurals>
 </resources>

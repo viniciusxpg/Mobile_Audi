@@ -70,6 +70,18 @@ class PlaylistRepository private constructor(context: Context) {
         } to Unit
     }
 
+    /**
+     * Nova ordem das músicas, como aparecem na tela ([visibleOrder]). Músicas da playlist que
+     * não estão mais no aparelho (e por isso não aparecem) ficam guardadas no fim.
+     */
+    suspend fun reorder(playlistId: Long, visibleOrder: List<Long>) = update { list ->
+        list.map { playlist ->
+            if (playlist.id != playlistId) return@map playlist
+            val visible = visibleOrder.toSet()
+            playlist.copy(songIds = visibleOrder + playlist.songIds.filterNot { it in visible })
+        } to Unit
+    }
+
     private suspend fun <T> update(transform: (List<Playlist>) -> Pair<List<Playlist>, T>): T =
         mutex.withLock {
             ensureLoaded()

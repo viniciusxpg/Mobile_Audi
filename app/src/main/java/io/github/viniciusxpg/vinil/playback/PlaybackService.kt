@@ -68,6 +68,8 @@ class PlaybackService : MediaLibraryService() {
     private lateinit var playlistRepository: PlaylistRepository
     private lateinit var stateStore: PlaybackStateStore
     private lateinit var equalizer: EqualizerController
+    private var exoPlayer: ExoPlayer? = null
+    private var fader: TransitionFader? = null
     private var session: MediaLibrarySession? = null
     private var positionSaverJob: Job? = null
 
@@ -137,6 +139,12 @@ class PlaybackService : MediaLibraryService() {
             equalizer.attach(audioSessionId)
         }
 
+        // Timer de desligamento e transição suave entre músicas.
+        exoPlayer = player
+        SleepTimer.attach(player)
+        fader = TransitionFader(player, serviceScope, PlaybackSettings.getInstance(this).fadeSeconds)
+            .also { it.start() }
+
         val openAppIntent = PendingIntent.getActivity(
             this,
             0,
@@ -175,6 +183,10 @@ class PlaybackService : MediaLibraryService() {
         positionSaverJob?.cancel()
         widgetJob?.cancel()
         equalizer.release()
+        fader?.stop()
+        fader = null
+        exoPlayer?.let(SleepTimer::detach)
+        exoPlayer = null
         session?.run {
             savePosition(player)
             updateWidget(player, stopped = true)

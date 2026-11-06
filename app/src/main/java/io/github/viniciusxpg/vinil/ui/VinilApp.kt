@@ -81,6 +81,9 @@ fun VinilApp(
     var showSettings by rememberSaveable { mutableStateOf(false) }
     val libraryFilter by viewModel.libraryFilter.collectAsStateWithLifecycle()
     val allFolders by viewModel.allFolders.collectAsStateWithLifecycle()
+    val librarySort by viewModel.librarySort.collectAsStateWithLifecycle()
+    val sleepTimer by viewModel.sleepTimer.collectAsStateWithLifecycle()
+    val fadeSeconds by viewModel.fadeSeconds.collectAsStateWithLifecycle()
 
     // Pilha de telas abertas sobre a biblioteca: "search" ou um mediaId
     // de coleção ("album:42", "playlist:3"...). Vazia = biblioteca.
@@ -205,6 +208,8 @@ fun VinilApp(
                 dynamicColor = dynamicColor,
                 onDynamicColorChange = onDynamicColorChange,
                 onOpenEqualizer = { showEqualizer = true },
+                fadeSeconds = fadeSeconds,
+                onFadeSecondsChange = viewModel::setFadeSeconds,
                 filter = libraryFilter,
                 folders = allFolders,
                 onHideMessagingAndRadioChange = viewModel::setHideMessagingAndRadio,
@@ -227,6 +232,10 @@ fun VinilApp(
                 onCycleRepeat = viewModel::cycleRepeatMode,
                 onOpenEqualizer = { showEqualizer = true },
                 onOpenQueue = { showQueue = true },
+                sleepTimer = sleepTimer,
+                onStartSleepTimer = viewModel::startSleepTimer,
+                onSleepAtEndOfTrack = viewModel::startSleepTimerEndOfTrack,
+                onCancelSleepTimer = viewModel::cancelSleepTimer,
             )
         }
 
@@ -267,6 +276,9 @@ fun VinilApp(
                     },
                     miniPlayer = miniPlayer,
                     emptyMessage = if (playlist != null) stringResource(R.string.playlist_empty) else null,
+                    onReorder = playlist?.let { p ->
+                        { songs: List<Song> -> viewModel.reorderPlaylist(p.id, songs.map { it.id }) }
+                    },
                     topBarActions = {
                         if (playlist != null) {
                             IconButton(onClick = { playlistToRename = playlist }) {
@@ -298,6 +310,8 @@ fun VinilApp(
                 onCreatePlaylist = { newPlaylistSongs = emptyList() },
                 onOpenSearch = { push(ROUTE_SEARCH) },
                 onOpenSettings = { showSettings = true },
+                sort = librarySort,
+                onSortChange = viewModel::setLibrarySort,
                 miniPlayer = miniPlayerAboveMenu,
             )
         }
