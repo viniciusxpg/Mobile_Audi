@@ -11,7 +11,10 @@ import androidx.media3.common.Player
 import androidx.media3.session.MediaController
 import androidx.media3.session.SessionToken
 import com.google.common.util.concurrent.ListenableFuture
+import io.github.viniciusxpg.vinil.data.FavoritesRepository
 import io.github.viniciusxpg.vinil.data.Folder
+import io.github.viniciusxpg.vinil.data.PlayStat
+import io.github.viniciusxpg.vinil.data.PlayStatsRepository
 import io.github.viniciusxpg.vinil.data.Library
 import io.github.viniciusxpg.vinil.data.LibraryFilter
 import io.github.viniciusxpg.vinil.data.LibrarySettings
@@ -163,6 +166,18 @@ class PlayerViewModel(application: Application) : AndroidViewModel(application) 
             onDone(TagEditor.write(getApplication(), song.uri, values))
         }
     }
+
+    // ---- Favoritos e histórico (playlists automáticas) ---------------------------------
+
+    private val favoritesRepository = FavoritesRepository.getInstance(application)
+
+    /** Ids das favoritas, a curtida mais recente primeiro. */
+    val favorites: StateFlow<List<Long>> = favoritesRepository.favorites
+
+    /** Quantas vezes e quando cada música tocou. */
+    val playStats: StateFlow<Map<Long, PlayStat>> = PlayStatsRepository.getInstance(application).stats
+
+    fun toggleFavorite(songId: Long) = favoritesRepository.toggle(songId)
 
     /** Salva a nova ordem das músicas de uma playlist (ids na ordem mostrada). */
     fun reorderPlaylist(playlistId: Long, songIds: List<Long>) {

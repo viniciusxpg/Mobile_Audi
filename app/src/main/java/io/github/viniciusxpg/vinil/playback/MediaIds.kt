@@ -10,7 +10,7 @@ package io.github.viniciusxpg.vinil.playback
  * ├── songs              -> song:{id}, ...
  * ├── albums             -> album:{id}, ...
  * │   └── album:{id}     -> song:{id}, ...
- * ├── playlists          -> playlist:{id}, ...
+ * ├── playlists          -> smart:{tipo}, ..., playlist:{id}, ...
  * │   └── playlist:{id}  -> song:{id}, ...
  * ├── artists            -> artist:{nome}, ...
  * │   └── artist:{nome}  -> song:{id}, ...
@@ -31,6 +31,7 @@ object MediaIds {
     private const val ARTIST_PREFIX = "artist:"
     private const val FOLDER_PREFIX = "folder:"
     private const val PLAYLIST_PREFIX = "playlist:"
+    private const val SMART_PREFIX = "smart:"
 
     fun song(id: Long): String = "$SONG_PREFIX$id"
 
@@ -42,6 +43,9 @@ object MediaIds {
 
     fun playlist(id: Long): String = "$PLAYLIST_PREFIX$id"
 
+    /** Playlist automática (favoritas, mais tocadas...), pela chave de SmartPlaylistKind. */
+    fun smart(key: String): String = "$SMART_PREFIX$key"
+
     fun parseSongId(mediaId: String): Long? = suffix(mediaId, SONG_PREFIX)?.toLongOrNull()
 
     fun parseAlbumId(mediaId: String): Long? = suffix(mediaId, ALBUM_PREFIX)?.toLongOrNull()
@@ -51,6 +55,8 @@ object MediaIds {
     fun parseFolder(mediaId: String): String? = suffix(mediaId, FOLDER_PREFIX)
 
     fun parsePlaylistId(mediaId: String): Long? = suffix(mediaId, PLAYLIST_PREFIX)?.toLongOrNull()
+
+    fun parseSmart(mediaId: String): String? = suffix(mediaId, SMART_PREFIX)
 
     private fun suffix(mediaId: String, prefix: String): String? =
         if (mediaId.startsWith(prefix)) mediaId.substring(prefix.length) else null

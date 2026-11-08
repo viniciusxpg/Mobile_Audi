@@ -45,6 +45,7 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.zIndex
 import io.github.viniciusxpg.vinil.R
+import io.github.viniciusxpg.vinil.data.SmartPlaylistKind
 import io.github.viniciusxpg.vinil.data.Song
 import io.github.viniciusxpg.vinil.data.uri
 import io.github.viniciusxpg.vinil.playback.MediaIds
@@ -61,6 +62,8 @@ data class CollectionUi(
     val showArtwork: Boolean,
     /** Preenchido quando a coleção é uma playlist do usuário. */
     val playlistId: Long? = null,
+    /** Preenchido quando a coleção é uma playlist automática (favoritas, mais tocadas...). */
+    val smartKind: SmartPlaylistKind? = null,
 )
 
 /** Tela de um álbum, artista, pasta ou playlist: cabeçalho com capa e botões, e a lista de músicas. */

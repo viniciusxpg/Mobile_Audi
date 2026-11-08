@@ -24,6 +24,10 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.QueueMusic
 import androidx.compose.material.icons.automirrored.filled.Sort
+import androidx.compose.material.icons.automirrored.filled.TrendingUp
+import androidx.compose.material.icons.filled.Favorite
+import androidx.compose.material.icons.filled.History
+import androidx.compose.material.icons.filled.NewReleases
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.Album
 import androidx.compose.material.icons.filled.Folder
@@ -71,7 +75,10 @@ import io.github.viniciusxpg.vinil.data.AlbumSort
 import io.github.viniciusxpg.vinil.data.ArtistSort
 import io.github.viniciusxpg.vinil.data.Folder
 import io.github.viniciusxpg.vinil.data.LibrarySort
+import io.github.viniciusxpg.vinil.data.SmartPlaylist
+import io.github.viniciusxpg.vinil.data.SmartPlaylistKind
 import io.github.viniciusxpg.vinil.data.SongSort
+import io.github.viniciusxpg.vinil.data.titleRes
 import io.github.viniciusxpg.vinil.data.sortAlbums
 import io.github.viniciusxpg.vinil.data.sortArtists
 import io.github.viniciusxpg.vinil.data.sortSongs
@@ -107,6 +114,7 @@ private enum class LibraryTab(@StringRes val title: Int, val icon: ImageVector) 
 fun LibraryScreen(
     state: PlayerUiState,
     playlists: List<Playlist>,
+    smartPlaylists: List<SmartPlaylist>,
     songActions: SongActions,
     onPlaySongs: (List<Song>, Int) -> Unit,
     onOpenCollection: (String) -> Unit,
@@ -207,6 +215,14 @@ fun LibraryScreen(
                                 onClick = onCreatePlaylist,
                             )
                         }
+                        items(smartPlaylists, key = { "smart-${it.kind.key}" }) { smart ->
+                            IconRow(
+                                icon = smart.kind.icon,
+                                title = stringResource(smart.kind.titleRes),
+                                subtitle = quantityString(R.plurals.song_count, smart.songs.size),
+                                onClick = { onOpenCollection(MediaIds.smart(smart.kind.key)) },
+                            )
+                        }
                         items(playlists, key = { it.id }) { playlist ->
                             IconRow(
                                 icon = Icons.Filled.LibraryMusic,
@@ -239,6 +255,14 @@ fun LibraryScreen(
         }
     }
 }
+
+private val SmartPlaylistKind.icon: ImageVector
+    get() = when (this) {
+        SmartPlaylistKind.FAVORITES -> Icons.Filled.Favorite
+        SmartPlaylistKind.MOST_PLAYED -> Icons.AutoMirrored.Filled.TrendingUp
+        SmartPlaylistKind.RECENTLY_PLAYED -> Icons.Filled.History
+        SmartPlaylistKind.RECENTLY_ADDED -> Icons.Filled.NewReleases
+    }
 
 private val SORTABLE_TABS = setOf(LibraryTab.SONGS, LibraryTab.ALBUMS, LibraryTab.ARTISTS)
 

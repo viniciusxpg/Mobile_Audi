@@ -11,6 +11,8 @@ import androidx.compose.material.icons.automirrored.filled.PlaylistAdd
 import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.DragHandle
 import androidx.compose.material.icons.filled.Edit
+import androidx.compose.material.icons.filled.Favorite
+import androidx.compose.material.icons.filled.FavoriteBorder
 import androidx.compose.material.icons.filled.MoreVert
 import androidx.compose.material.icons.filled.SkipNext
 import androidx.compose.material3.DropdownMenu
@@ -45,6 +47,8 @@ class SongActions(
     val onRemoveFromPlaylist: ((Song) -> Unit)? = null,
     /** Editar título/artista/álbum no arquivo; null quando o aparelho não permite. */
     val onEditTags: ((Song) -> Unit)? = null,
+    val isFavorite: (Song) -> Boolean = { false },
+    val onToggleFavorite: ((Song) -> Unit)? = null,
 )
 
 /**
@@ -135,6 +139,24 @@ private fun SongMenu(song: Song, actions: SongActions) {
                     actions.onPlayNext(song)
                 },
             )
+            actions.onToggleFavorite?.let { toggle ->
+                val favorite = actions.isFavorite(song)
+                DropdownMenuItem(
+                    text = {
+                        Text(stringResource(if (favorite) R.string.favorite_remove else R.string.favorite_add))
+                    },
+                    leadingIcon = {
+                        Icon(
+                            if (favorite) Icons.Filled.Favorite else Icons.Filled.FavoriteBorder,
+                            contentDescription = null,
+                        )
+                    },
+                    onClick = {
+                        expanded = false
+                        toggle(song)
+                    },
+                )
+            }
             DropdownMenuItem(
                 text = { Text(stringResource(R.string.action_add_to_playlist)) },
                 leadingIcon = { Icon(Icons.AutoMirrored.Filled.PlaylistAdd, contentDescription = null) },

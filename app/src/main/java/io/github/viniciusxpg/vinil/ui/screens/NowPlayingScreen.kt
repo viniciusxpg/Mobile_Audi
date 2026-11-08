@@ -5,6 +5,7 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
@@ -17,6 +18,8 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.QueueMusic
 import androidx.compose.material.icons.filled.Bedtime
 import androidx.compose.material.icons.filled.Equalizer
+import androidx.compose.material.icons.filled.Favorite
+import androidx.compose.material.icons.filled.FavoriteBorder
 import androidx.compose.material.icons.filled.KeyboardArrowDown
 import androidx.compose.material.icons.filled.Pause
 import androidx.compose.material.icons.filled.PlayArrow
@@ -73,6 +76,8 @@ fun NowPlayingScreen(
     onStartSleepTimer: (minutes: Int) -> Unit,
     onSleepAtEndOfTrack: () -> Unit,
     onCancelSleepTimer: () -> Unit,
+    isFavorite: Boolean,
+    onToggleFavorite: () -> Unit,
 ) {
     val current = state.current ?: return
     var showTimerDialog by remember { mutableStateOf(false) }
@@ -156,7 +161,7 @@ fun NowPlayingScreen(
                         horizontalAlignment = Alignment.CenterHorizontally,
                         verticalArrangement = Arrangement.spacedBy(16.dp),
                     ) {
-                        TrackInfo(current.title, current.artist)
+                        TrackInfo(current.title, current.artist, isFavorite, onToggleFavorite)
                         SeekBar(state, onSeek)
                         controls()
                     }
@@ -175,7 +180,7 @@ fun NowPlayingScreen(
                             .weight(1f, fill = false)
                             .widthIn(max = 400.dp),
                     )
-                    TrackInfo(current.title, current.artist)
+                    TrackInfo(current.title, current.artist, isFavorite, onToggleFavorite)
                     SeekBar(state, onSeek)
                     controls()
                 }
@@ -205,8 +210,24 @@ fun NowPlayingScreen(
 }
 
 @Composable
-private fun TrackInfo(title: String, artist: String) {
-    Column(horizontalAlignment = Alignment.CenterHorizontally) {
+private fun TrackInfo(title: String, artist: String, isFavorite: Boolean, onToggleFavorite: () -> Unit) {
+    Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.fillMaxWidth()) {
+        // Espaço do mesmo tamanho do botão, para o texto continuar centralizado.
+        Spacer(Modifier.size(48.dp))
+        TrackText(title, artist, Modifier.weight(1f))
+        IconButton(onClick = onToggleFavorite) {
+            Icon(
+                imageVector = if (isFavorite) Icons.Filled.Favorite else Icons.Filled.FavoriteBorder,
+                contentDescription = stringResource(if (isFavorite) R.string.favorite_remove else R.string.favorite_add),
+                tint = if (isFavorite) MaterialTheme.colorScheme.primary else LocalContentColor.current,
+            )
+        }
+    }
+}
+
+@Composable
+private fun TrackText(title: String, artist: String, modifier: Modifier = Modifier) {
+    Column(modifier, horizontalAlignment = Alignment.CenterHorizontally) {
         Text(
             text = title,
             style = MaterialTheme.typography.headlineSmall,

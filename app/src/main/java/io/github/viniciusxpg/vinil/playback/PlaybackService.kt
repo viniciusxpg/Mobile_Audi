@@ -29,7 +29,13 @@ import io.github.viniciusxpg.vinil.data.Album
 import io.github.viniciusxpg.vinil.data.Artist
 import io.github.viniciusxpg.vinil.data.Folder
 import io.github.viniciusxpg.vinil.data.MusicRepository
+import io.github.viniciusxpg.vinil.data.FavoritesRepository
+import io.github.viniciusxpg.vinil.data.Library
+import io.github.viniciusxpg.vinil.data.PlayStatsRepository
 import io.github.viniciusxpg.vinil.data.Playlist
+import io.github.viniciusxpg.vinil.data.SmartPlaylistKind
+import io.github.viniciusxpg.vinil.data.SmartPlaylists
+import io.github.viniciusxpg.vinil.data.titleRes
 import io.github.viniciusxpg.vinil.data.PlaylistRepository
 import io.github.viniciusxpg.vinil.data.matchingSongs
 import io.github.viniciusxpg.vinil.data.Song
@@ -70,6 +76,9 @@ class PlaybackService : MediaLibraryService() {
     private lateinit var equalizer: EqualizerController
     private var exoPlayer: ExoPlayer? = null
     private var fader: TransitionFader? = null
+    private var playTracker: PlayTracker? = null
+    private lateinit var favorites: FavoritesRepository
+    private lateinit var playStats: PlayStatsRepository
     private var session: MediaLibrarySession? = null
     private var positionSaverJob: Job? = null
 
@@ -145,6 +154,11 @@ class PlaybackService : MediaLibraryService() {
         fader = TransitionFader(player, serviceScope, PlaybackSettings.getInstance(this).fadeSeconds)
             .also { it.start() }
 
+        // Favoritos e histórico (para as playlists automáticas).
+        favorites = FavoritesRepository.getInstance(this)
+        playStats = PlayStatsRepository.getInstance(this)
+        playTracker = PlayTracker(player, serviceScope, playStats).also { it.start() }
+
         val openAppIntent = PendingIntent.getActivity(
             this,
             0,
@@ -185,6 +199,8 @@ class PlaybackService : MediaLibraryService() {
         equalizer.release()
         fader?.stop()
         fader = null
+        playTracker?.stop()
+        playTracker = null
         exoPlayer?.let(SleepTimer::detach)
         exoPlayer = null
         session?.run {
@@ -460,6 +476,12 @@ class PlaybackService : MediaLibraryService() {
 
     private fun Playlist.toBrowsable() = toMediaItem(songCount(songIds.size))
 
+    private fun smartItem(kind: SmartPlaylistKind): MediaItem =
+        folderItem(MediaIds.smart(kind.key), getString(kind.titleRes), MediaMetadata.MEDIA_TYPE_PLAYLIST)
+
+    private fun smartSongs(kind: SmartPlaylistKind, library: Library): List<Song> =
+        SmartPlaylists.of(kind, library, favorites.favorites.value, playStats.stats.value)
+
     private suspend fun childrenOf(parentId: String): List<MediaItem>? {
         if (parentId == MediaIds.ROOT) return rootFolders()
         val library = repository.getLibrary()
@@ -468,13 +490,17 @@ class PlaybackService : MediaLibraryService() {
             MediaIds.ALBUMS -> library.albums.map { it.toBrowsable() }
             MediaIds.ARTISTS -> library.artists.map { it.toBrowsable() }
             MediaIds.FOLDERS -> library.folders.map { it.toBrowsable() }
-            MediaIds.PLAYLISTS -> playlistRepository.load().map { it.toBrowsable() }
+            MediaIds.PLAYLISTS ->
+                SmartPlaylistKind.entries.map(::smartItem) + playlistRepository.load().map { it.toBrowsable() }
             else -> {
                 val songs = MediaIds.parseAlbumId(parentId)?.let { library.album(it)?.songs }
                     ?: MediaIds.parseArtist(parentId)?.let { library.artist(it)?.songs }
                     ?: MediaIds.parseFolder(parentId)?.let { library.folder(it)?.songs }
                     ?: MediaIds.parsePlaylistId(parentId)?.let { id ->
                         playlistRepository.load().firstOrNull { it.id == id }?.songsIn(library)
+                    }
+                    ?: MediaIds.parseSmart(parentId)?.let { SmartPlaylistKind.fromKey(it) }?.let { kind ->
+                        smartSongs(kind, library)
                     }
                 songs?.map { it.toMediaItem() }
             }
@@ -492,5 +518,6 @@ class PlaybackService : MediaLibraryService() {
             ?: MediaIds.parsePlaylistId(mediaId)?.let { id ->
                 playlistRepository.load().firstOrNull { it.id == id }?.toBrowsable()
             }
+            ?: MediaIds.parseSmart(mediaId)?.let { SmartPlaylistKind.fromKey(it) }?.let(::smartItem)
     }
 }

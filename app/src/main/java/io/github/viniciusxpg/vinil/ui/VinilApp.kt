@@ -33,7 +33,11 @@ import androidx.lifecycle.viewmodel.compose.viewModel
 import io.github.viniciusxpg.vinil.R
 import io.github.viniciusxpg.vinil.data.Library
 import io.github.viniciusxpg.vinil.data.Playlist
+import io.github.viniciusxpg.vinil.data.SmartPlaylist
+import io.github.viniciusxpg.vinil.data.SmartPlaylistKind
+import io.github.viniciusxpg.vinil.data.SmartPlaylists
 import io.github.viniciusxpg.vinil.data.Song
+import io.github.viniciusxpg.vinil.data.titleRes
 import io.github.viniciusxpg.vinil.data.TagEditor
 import io.github.viniciusxpg.vinil.data.TagValues
 import io.github.viniciusxpg.vinil.data.WriteAccess
@@ -91,6 +95,11 @@ fun VinilApp(
     val librarySort by viewModel.librarySort.collectAsStateWithLifecycle()
     val sleepTimer by viewModel.sleepTimer.collectAsStateWithLifecycle()
     val fadeSeconds by viewModel.fadeSeconds.collectAsStateWithLifecycle()
+    val favorites by viewModel.favorites.collectAsStateWithLifecycle()
+    val playStats by viewModel.playStats.collectAsStateWithLifecycle()
+    val smartPlaylists = remember(state.library, favorites, playStats) {
+        SmartPlaylists.all(state.library, favorites, playStats)
+    }
 
     // Pilha de telas abertas sobre a biblioteca: "search" ou um mediaId
     // de coleção ("album:42", "playlist:3"...). Vazia = biblioteca.
@@ -206,7 +215,7 @@ fun VinilApp(
     }
 
     val route = backStack.lastOrNull()
-    val collection = route?.takeIf { it != ROUTE_SEARCH }?.let { collectionFor(it, state.library, playlists) }
+    val collection = route?.takeIf { it != ROUTE_SEARCH }?.let { collectionFor(it, state.library, playlists, smartPlaylists) }
 
     // Se o item aberto sumiu (playlist excluída, música apagada...), volta uma tela.
     LaunchedEffect(route, collection, state.isLoading) {
@@ -231,6 +240,8 @@ fun VinilApp(
         } else {
             null
         },
+        isFavorite = { song -> song.id in favorites },
+        onToggleFavorite = { song -> viewModel.toggleFavorite(song.id) },
     )
 
     val miniPlayer: @Composable () -> Unit = {
@@ -317,6 +328,10 @@ fun VinilApp(
                 onStartSleepTimer = viewModel::startSleepTimer,
                 onSleepAtEndOfTrack = viewModel::startSleepTimerEndOfTrack,
                 onCancelSleepTimer = viewModel::cancelSleepTimer,
+                isFavorite = state.current?.mediaId?.let(MediaIds::parseSongId)?.let { it in favorites } == true,
+                onToggleFavorite = {
+                    state.current?.mediaId?.let(MediaIds::parseSongId)?.let(viewModel::toggleFavorite)
+                },
             )
         }
 
@@ -352,12 +367,19 @@ fun VinilApp(
                             onAddToPlaylist = songActions.onAddToPlaylist,
                             onRemoveFromPlaylist = { song -> viewModel.removeFromPlaylist(playlist.id, song.id) },
                             onEditTags = songActions.onEditTags,
+                            isFavorite = songActions.isFavorite,
+                            onToggleFavorite = songActions.onToggleFavorite,
                         )
                     } else {
                         songActions
                     },
                     miniPlayer = miniPlayer,
-                    emptyMessage = if (playlist != null) stringResource(R.string.playlist_empty) else null,
+                    emptyMessage = when {
+                        playlist != null -> stringResource(R.string.playlist_empty)
+                        collection.smartKind == SmartPlaylistKind.FAVORITES -> stringResource(R.string.smart_favorites_empty)
+                        collection.smartKind != null -> stringResource(R.string.smart_played_empty)
+                        else -> null
+                    },
                     onReorder = playlist?.let { p ->
                         { songs: List<Song> -> viewModel.reorderPlaylist(p.id, songs.map { it.id }) }
                     },
@@ -386,6 +408,7 @@ fun VinilApp(
             LibraryScreen(
                 state = state,
                 playlists = playlists,
+                smartPlaylists = smartPlaylists,
                 songActions = songActions,
                 onPlaySongs = viewModel::playSongs,
                 onOpenCollection = { push(it) },
@@ -488,7 +511,12 @@ private fun Context.toast(message: String) {
 }
 
 @Composable
-private fun collectionFor(mediaId: String, library: Library, playlists: List<Playlist>): CollectionUi? {
+private fun collectionFor(
+    mediaId: String,
+    library: Library,
+    playlists: List<Playlist>,
+    smartPlaylists: List<SmartPlaylist>,
+): CollectionUi? {
     MediaIds.parseAlbumId(mediaId)?.let { id ->
         val album = library.album(id) ?: return null
         return CollectionUi(
@@ -526,6 +554,16 @@ private fun collectionFor(mediaId: String, library: Library, playlists: List<Pla
             songs = songs,
             showArtwork = true,
             playlistId = playlist.id,
+        )
+    }
+    MediaIds.parseSmart(mediaId)?.let { key ->
+        val smart = smartPlaylists.firstOrNull { it.kind.key == key } ?: return null
+        return CollectionUi(
+            title = stringResource(smart.kind.titleRes),
+            subtitle = quantityString(R.plurals.song_count, smart.songs.size),
+            songs = smart.songs,
+            showArtwork = true,
+            smartKind = smart.kind,
         )
     }
     return null
