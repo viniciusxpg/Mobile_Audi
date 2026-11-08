@@ -13,6 +13,7 @@ Tocador de música para Android, nativo, em **Kotlin + Jetpack Compose + Media3 
 - **Transição suave** (Configurações): a música termina diminuindo o volume e a próxima começa aumentando, de 1 a 10 s
 - **Busca** por músicas, álbuns, artistas e playlists, sem diferenciar acentos ("acucar" encontra "Açúcar")
 - **Tocar em seguida**: coloca uma música logo depois da atual
+- **Editar informações** (menu ⋮, Android 8+): título, artista, álbum e nº da faixa gravados no próprio arquivo (MP3, FLAC, M4A, OGG, WAV...), com a confirmação do Android
 - **Fila de reprodução**: veja o que vem a seguir (na ordem real, inclusive no aleatório), pule para uma música, remova, limpe ou arraste para reordenar
 - Telas de álbum, artista e pasta com botões **Tocar** e **Aleatório**; álbuns em ordem de faixa
 - **Retoma de onde parou**: ao reabrir o app (ou apertar play no fone com o app fechado) volta à última música, na mesma posição, com a mesma fila
@@ -71,6 +72,8 @@ app/src/main/java/io/github/viniciusxpg/vinil/
 │   ├── PlaylistRepository.kt    # playlists salvas em playlists.json
 │   ├── LibrarySettings.kt       # pastas ocultas escolhidas pelo usuário
 │   ├── Sorting.kt               # ordenação das listas (ordem alfabética em português)
+│   ├── TagWriter.kt             # leitura/gravação de tags (jaudiotagger)
+│   ├── TagEditor.kt             # permissão do Android + edição segura numa cópia temporária
 │   └── MusicRepository.kt       # leitura do MediaStore + cache
 ├── playback/
 │   ├── PlaybackService.kt       # MediaLibraryService: ExoPlayer, notificação, Android Auto

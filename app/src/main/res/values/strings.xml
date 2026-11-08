@@ -140,4 +140,15 @@
         <item quantity="many">%1$d segundos diminuindo e aumentando o volume</item>
         <item quantity="other">%1$d segundos diminuindo e aumentando o volume</item>
     </plurals>
+
+    <string name="action_edit_tags">Editar informações</string>
+    <string name="field_title">Título</string>
+    <string name="field_artist">Artista</string>
+    <string name="field_album">Álbum</string>
+    <string name="field_track">Nº da faixa</string>
+    <string name="edit_tags_hint">As mudanças são gravadas no próprio arquivo e aparecem também em outros apps. O Android pode pedir sua confirmação.</string>
+    <string name="tags_saved">Informações salvas</string>
+    <string name="tags_error">Não foi possível salvar: %1$s</string>
+    <string name="tags_cancelled">Edição cancelada: o arquivo não foi alterado</string>
+    <string name="tags_current_song">Toque outra música antes de editar a que está tocando agora</string>
 </resources>

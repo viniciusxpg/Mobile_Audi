@@ -11,6 +11,7 @@ media3 = "1.11.1"
 coroutines = "1.11.0"
 junit = "4.13.2"
 orgJson = "20260814"
+jaudiotagger = "3.0.1"
 
 [libraries]
 androidx-core-ktx = { group = "androidx.core", name = "core-ktx", version.ref = "coreKtx" }
@@ -30,6 +31,9 @@ androidx-media3-exoplayer = { group = "androidx.media3", name = "media3-exoplaye
 androidx-media3-session = { group = "androidx.media3", name = "media3-session", version.ref = "media3" }
 
 kotlinx-coroutines-guava = { group = "org.jetbrains.kotlinx", name = "kotlinx-coroutines-guava", version.ref = "coroutines" }
+
+# Leitura e gravação de tags (ID3, Vorbis, MP4...) para editar as informações das músicas.
+jaudiotagger = { group = "net.jthink", name = "jaudiotagger", version.ref = "jaudiotagger" }
 
 junit = { group = "junit", name = "junit", version.ref = "junit" }
 # Implementação real do org.json para testes na JVM (o android.jar só tem stubs).

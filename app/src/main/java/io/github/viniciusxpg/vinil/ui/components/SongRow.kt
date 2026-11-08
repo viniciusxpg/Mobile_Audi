@@ -10,6 +10,7 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.PlaylistAdd
 import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.DragHandle
+import androidx.compose.material.icons.filled.Edit
 import androidx.compose.material.icons.filled.MoreVert
 import androidx.compose.material.icons.filled.SkipNext
 import androidx.compose.material3.DropdownMenu
@@ -42,6 +43,8 @@ class SongActions(
     val onPlayNext: (Song) -> Unit,
     val onAddToPlaylist: (List<Song>) -> Unit,
     val onRemoveFromPlaylist: ((Song) -> Unit)? = null,
+    /** Editar título/artista/álbum no arquivo; null quando o aparelho não permite. */
+    val onEditTags: ((Song) -> Unit)? = null,
 )
 
 /**
@@ -140,6 +143,16 @@ private fun SongMenu(song: Song, actions: SongActions) {
                     actions.onAddToPlaylist(listOf(song))
                 },
             )
+            actions.onEditTags?.let { edit ->
+                DropdownMenuItem(
+                    text = { Text(stringResource(R.string.action_edit_tags)) },
+                    leadingIcon = { Icon(Icons.Filled.Edit, contentDescription = null) },
+                    onClick = {
+                        expanded = false
+                        edit(song)
+                    },
+                )
+            }
             actions.onRemoveFromPlaylist?.let { remove ->
                 DropdownMenuItem(
                     text = { Text(stringResource(R.string.action_remove_from_playlist)) },

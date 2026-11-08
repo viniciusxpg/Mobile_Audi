@@ -1,5 +1,6 @@
 package io.github.viniciusxpg.vinil.ui
 
+import android.app.Activity
 import android.content.Context
 import android.content.Intent
 import android.net.Uri
@@ -7,6 +8,7 @@ import android.provider.Settings
 import android.widget.Toast
 import androidx.activity.compose.BackHandler
 import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.IntentSenderRequest
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.PlaylistAdd
@@ -32,9 +34,14 @@ import io.github.viniciusxpg.vinil.R
 import io.github.viniciusxpg.vinil.data.Library
 import io.github.viniciusxpg.vinil.data.Playlist
 import io.github.viniciusxpg.vinil.data.Song
+import io.github.viniciusxpg.vinil.data.TagEditor
+import io.github.viniciusxpg.vinil.data.TagValues
+import io.github.viniciusxpg.vinil.data.WriteAccess
+import io.github.viniciusxpg.vinil.data.uri
 import io.github.viniciusxpg.vinil.playback.MediaIds
 import io.github.viniciusxpg.vinil.ui.components.AddToPlaylistDialog
 import io.github.viniciusxpg.vinil.ui.components.DeletePlaylistDialog
+import io.github.viniciusxpg.vinil.ui.components.EditTagsDialog
 import io.github.viniciusxpg.vinil.ui.components.MiniPlayer
 import io.github.viniciusxpg.vinil.ui.components.PlaylistNameDialog
 import io.github.viniciusxpg.vinil.ui.components.SongActions
@@ -111,6 +118,68 @@ fun VinilApp(
         hasPermission = PermissionUtils.hasAudioPermission(context)
     }
 
+    // ---- Edição das informações (tags) ------------------------------------------------
+    var songToEdit by remember { mutableStateOf<Song?>(null) }
+    // Edição esperando a confirmação do Android para gravar no arquivo.
+    var pendingTagWrite by remember { mutableStateOf<Pair<Song, TagValues>?>(null) }
+
+    fun finishTagWrite(song: Song, values: TagValues) {
+        viewModel.writeTags(song, values) { result ->
+            context.toast(
+                result.fold(
+                    onSuccess = { resources.getString(R.string.tags_saved) },
+                    onFailure = { error ->
+                        resources.getString(R.string.tags_error, error.message ?: error.javaClass.simpleName)
+                    },
+                ),
+            )
+        }
+    }
+
+    val writeApprovalLauncher = rememberLauncherForActivityResult(
+        ActivityResultContracts.StartIntentSenderForResult(),
+    ) { result ->
+        val pending = pendingTagWrite
+        pendingTagWrite = null
+        if (result.resultCode == Activity.RESULT_OK && pending != null) {
+            finishTagWrite(pending.first, pending.second)
+        } else {
+            context.toast(resources.getString(R.string.tags_cancelled))
+        }
+    }
+
+    val legacyWritePermissionLauncher = rememberLauncherForActivityResult(
+        ActivityResultContracts.RequestPermission(),
+    ) { granted ->
+        val pending = pendingTagWrite
+        pendingTagWrite = null
+        if (granted && pending != null) {
+            finishTagWrite(pending.first, pending.second)
+        } else {
+            context.toast(resources.getString(R.string.tags_cancelled))
+        }
+    }
+
+    fun requestTagWrite(song: Song, values: TagValues) {
+        val access = try {
+            TagEditor.writeAccess(context, song.uri)
+        } catch (e: Exception) {
+            context.toast(resources.getString(R.string.tags_error, e.message ?: e.javaClass.simpleName))
+            return
+        }
+        when (access) {
+            WriteAccess.Granted -> finishTagWrite(song, values)
+            is WriteAccess.NeedsApproval -> {
+                pendingTagWrite = song to values
+                writeApprovalLauncher.launch(IntentSenderRequest.Builder(access.intentSender).build())
+            }
+            WriteAccess.NeedsStoragePermission -> {
+                pendingTagWrite = song to values
+                legacyWritePermissionLauncher.launch(TagEditor.LEGACY_WRITE_PERMISSION)
+            }
+        }
+    }
+
     // O usuário pode conceder a permissão pelas configurações e voltar ao app.
     LifecycleResumeEffect(Unit) {
         hasPermission = PermissionUtils.hasAudioPermission(context)
@@ -150,6 +219,18 @@ fun VinilApp(
             context.toast(resources.getString(R.string.play_next_done))
         },
         onAddToPlaylist = { songs -> songsToAdd = songs },
+        onEditTags = if (TagEditor.isAvailable) {
+            { song: Song ->
+                // O player está com o arquivo aberto; gravar por cima atrapalharia a reprodução.
+                if (state.current?.mediaId == MediaIds.song(song.id)) {
+                    context.toast(resources.getString(R.string.tags_current_song))
+                } else {
+                    songToEdit = song
+                }
+            }
+        } else {
+            null
+        },
     )
 
     val miniPlayer: @Composable () -> Unit = {
@@ -270,6 +351,7 @@ fun VinilApp(
                             onPlayNext = songActions.onPlayNext,
                             onAddToPlaylist = songActions.onAddToPlaylist,
                             onRemoveFromPlaylist = { song -> viewModel.removeFromPlaylist(playlist.id, song.id) },
+                            onEditTags = songActions.onEditTags,
                         )
                     } else {
                         songActions
@@ -370,6 +452,21 @@ fun VinilApp(
             onConfirm = { name ->
                 playlistToRename = null
                 viewModel.renamePlaylist(playlist.id, name)
+            },
+        )
+    }
+
+    songToEdit?.let { song ->
+        EditTagsDialog(
+            initial = TagEditor.initialValues(
+                song,
+                unknownArtist = stringResource(R.string.unknown_artist),
+                unknownAlbum = stringResource(R.string.unknown_album),
+            ),
+            onDismiss = { songToEdit = null },
+            onSave = { values ->
+                songToEdit = null
+                requestTagWrite(song, values)
             },
         )
     }

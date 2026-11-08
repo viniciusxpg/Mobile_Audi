@@ -17,6 +17,9 @@ import io.github.viniciusxpg.vinil.data.LibraryFilter
 import io.github.viniciusxpg.vinil.data.LibrarySettings
 import io.github.viniciusxpg.vinil.data.LibrarySort
 import io.github.viniciusxpg.vinil.data.SortSettings
+import io.github.viniciusxpg.vinil.data.TagEditor
+import io.github.viniciusxpg.vinil.data.TagValues
+import io.github.viniciusxpg.vinil.data.uri
 import io.github.viniciusxpg.vinil.data.MusicRepository
 import io.github.viniciusxpg.vinil.data.Playlist
 import io.github.viniciusxpg.vinil.data.PlaylistRepository
@@ -149,6 +152,17 @@ class PlayerViewModel(application: Application) : AndroidViewModel(application) 
     val fadeSeconds: StateFlow<Int> = playbackSettings.fadeSeconds
 
     fun setFadeSeconds(seconds: Int) = playbackSettings.setFadeSeconds(seconds)
+
+    /**
+     * Grava as novas informações no arquivo da música. Chame depois de o usuário liberar a
+     * gravação (ver TagEditor.writeAccess). A biblioteca se atualiza sozinha quando o
+     * Android reindexa o arquivo.
+     */
+    fun writeTags(song: Song, values: TagValues, onDone: (Result<Unit>) -> Unit) {
+        viewModelScope.launch {
+            onDone(TagEditor.write(getApplication(), song.uri, values))
+        }
+    }
 
     /** Salva a nova ordem das músicas de uma playlist (ids na ordem mostrada). */
     fun reorderPlaylist(playlistId: Long, songIds: List<Long>) {

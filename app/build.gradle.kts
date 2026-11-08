@@ -38,6 +38,12 @@ android {
     buildFeatures {
         compose = true
     }
+
+    lint {
+        // A jaudiotagger referencia java.awt/javax.imageio só no tratamento de capas,
+        // que o app não usa (edita apenas texto).
+        disable += "InvalidPackage"
+    }
 }
 
 kotlin {
@@ -63,6 +69,7 @@ dependencies {
     implementation(libs.androidx.media3.exoplayer)
     implementation(libs.androidx.media3.session)
     implementation(libs.kotlinx.coroutines.guava)
+    implementation(libs.jaudiotagger)
 
     testImplementation(libs.junit)
     testImplementation(libs.org.json)

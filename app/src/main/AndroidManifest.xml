@@ -9,6 +9,12 @@
         android:name="android.permission.READ_EXTERNAL_STORAGE"
         android:maxSdkVersion="32" />
 
+    <!-- Editar as informações das músicas no Android 8 e 9. No 10+ o sistema pede
+         confirmação arquivo por arquivo, sem esta permissão. -->
+    <uses-permission
+        android:name="android.permission.WRITE_EXTERNAL_STORAGE"
+        android:maxSdkVersion="28" />
+
     <!-- Notificação de reprodução (obrigatória a partir do Android 13). -->
     <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
 
